@@ -6,14 +6,11 @@ from goldsrc_parse_ents import convert_entities_to_lua
 # Load the template from template-main.lua
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
-template_main_path = os.path.join(script_dir, "template-main.lua")
-with open(template_main_path, 'r', encoding='utf-8') as f:
-    template_main_lua = f.read()
-
-template_a_goldsrc_path = os.path.join(script_dir, "template-a-goldsrc.lua")
-with open(template_a_goldsrc_path, 'r', encoding='utf-8') as f:
-    template_a_goldsrc_lua = f.read()
-
+lua_files = [
+    'a-goldsrc-1.lua',
+    'template-main.lua',
+    'template-a-goldsrc-level.lua',
+]
 
 def collect_register_objects(output_dir):
     actors_dir = os.path.join(output_dir, "actors")
@@ -64,21 +61,42 @@ def main():
     # Create directories if needed
     os.makedirs(output_dir, exist_ok=True)
 
-    # Write files
-    with open(os.path.join(output_dir, "main.lua"), "w", encoding="utf-8") as f:
-        f.write(template_main_lua
-            .replace("$LEVELNAME", levelname)
-            .replace("$LEVELUNAME", leveluname)
-            .strip())
+    # Parse entities
+    entities, entities_lua = convert_entities_to_lua(entities_path, bspguy_scale)
 
-    with open(os.path.join(output_dir, "a-goldsrc.lua"), "w", encoding="utf-8") as f:
-        f.write(template_a_goldsrc_lua
-            .replace("$LEVELNAME", levelname)
-            .replace("$LEVELUNAME", leveluname)
-            .replace("$ENTITIES", convert_entities_to_lua(entities_path, bspguy_scale))
-            .replace("$REGISTER_OBJECTS", collect_register_objects(output_dir))
-            .replace("$AABBS", get_aabbs(os.path.join("output", levelname, "aabb.lua")))
-            .strip())
+    # Set template variables
+    template_variables = {
+        "$LEVELNAME":        levelname,
+        "$LEVELUNAME":       leveluname,
+        "$ENTITIES":         entities_lua,
+        "$REGISTER_OBJECTS": collect_register_objects(output_dir),
+        "$AABBS":            get_aabbs(os.path.join("output", levelname, "aabb.lua")),
+    }
+
+    # Figure out which classes to include
+    for entity in entities:
+        lua_filename = f"a-goldsrc-{entity['classname']}.lua"
+        lua_local_path = os.path.join("classes", lua_filename)
+        lua_path = os.path.join(script_dir, "lua", lua_local_path)
+        if os.path.exists(lua_path) and lua_local_path not in lua_files:
+            lua_files.append(lua_local_path)
+
+    # Generate lua files
+    for lua_file in lua_files:
+        print('Reading lua file ' + os.path.join(script_dir, "lua", lua_file))
+        # Read
+        with open(os.path.join(script_dir, "lua", lua_file), 'r', encoding='utf-8') as f:
+            lua_source = f.read()
+
+        # Replace template variables
+        for k, v in template_variables.items():
+            lua_source = lua_source.replace(k, v)
+
+        # Output lua file
+        output_lua_filename = os.path.basename(lua_file.replace('template-', ''))
+        print('Writing lua file ' + os.path.join(output_dir, output_lua_filename))
+        with open(os.path.join(output_dir, output_lua_filename), 'w', encoding='utf-8') as f:
+            f.write(lua_source)
 
     print(f"✅ Mod generated at: {output_dir}")
 

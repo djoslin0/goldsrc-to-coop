@@ -147,7 +147,7 @@ def dump_entities_to_lua(entities):
 def convert_entities_to_lua(entities_filepath, bspguy_scalar):
     entities = parse_entities(entities_filepath)
     interpret_entities(entities, bspguy_scalar, 1)
-    return dump_entities_to_lua(entities)
+    return entities, dump_entities_to_lua(entities)
 
 if __name__ == "__main__":
     if len(sys.argv) != 4:

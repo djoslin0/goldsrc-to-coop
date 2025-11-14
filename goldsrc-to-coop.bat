@@ -5,6 +5,10 @@ CD /D "%~dp0"
 REM Get the first argument (dragged file)
 SET "BSP_FILE=%~1"
 
+REM Parse optional --output-mod parameter
+SET "OUTPUT_MOD_PATH="
+IF "%~2"=="--output-mod" SET "OUTPUT_MOD_PATH=%~3"
+
 REM Check that a file was actually provided
 IF "%BSP_FILE%"=="" (
     ECHO Drag and drop a BSP file onto this script.
@@ -69,7 +73,13 @@ REM Set fast64 stuff
 REM Export level
 "%BLENDER_PATH%" --background --python scripts/export-level.py -- "%OUT_DIR%/5-set-fast64.blend" "%BSP_NAME%" "%BLEND_EXPORT_PATH%"
 
-REM Create lua fo;es
+REM Create lua files
 "%PYTHON_PATH%" "%CREATE_LUA_PATH%" "%BSP_NAME%" "%OUT_DIR%/entities.txt" "%SCALE%"
+
+REM If --output-mod was specified, copy the mod directory to the given path
+IF DEFINED OUTPUT_MOD_PATH (
+    ECHO Copying mod to "%OUTPUT_MOD_PATH%"
+    XCOPY "%OUT_DIR%\mod" "%OUTPUT_MOD_PATH%" /E /I /Y
+)
 
 PAUSE
