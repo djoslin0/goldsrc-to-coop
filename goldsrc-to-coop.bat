@@ -48,23 +48,23 @@ IF NOT %ERRORLEVEL%==0 (
 )
 
 REM Run the command to convert BSP to OBJ and export the entities
-REM "%BSPGUY_PATH%" exportobj "%BSP_FILE%" -scale "%SCALE%" -lightmap "1" -o "%OUT_DIR%"
-REM "%BSPGUY_PATH%" exportent "%BSP_FILE%" -o "%OUT_DIR%\entities.txt"
+"%BSPGUY_PATH%" exportobj "%BSP_FILE%" -scale "%SCALE%" -lightmap "1" -o "%OUT_DIR%"
+"%BSPGUY_PATH%" exportent "%BSP_FILE%" -o "%OUT_DIR%\entities.txt"
 
 REM Import all OBJ files into Blender
-REM "%BLENDER_PATH%" --background --python scripts/import-all-objs.py -- "%OUT_DIR%" "%OUT_DIR%/entities.txt" "%SCALE%"
+"%BLENDER_PATH%" --background --python scripts/import-all-objs.py -- "%OUT_DIR%" "%OUT_DIR%/entities.txt" "%SCALE%"
 
 REM Combine OBJs to UV2
-REM "%BLENDER_PATH%" --background --python scripts/combine-into-uv2.py -- "%OUT_DIR%/1-imported-objs.blend"
+"%BLENDER_PATH%" --background --python scripts/combine-into-uv2.py -- "%OUT_DIR%/1-imported-objs.blend"
 
 REM Convert materials to blender-visible lightmap
-REM "%BLENDER_PATH%" --background --python scripts/blender-lightmap.py -- "%OUT_DIR%/2-combine-uv2.blend"
+"%BLENDER_PATH%" --background --python scripts/blender-lightmap.py -- "%OUT_DIR%/2-combine-uv2.blend"
 
 REM Convert materials to coop lightmap
-REM "%BLENDER_PATH%" --background --python scripts/coop-lightmap.py -- "%OUT_DIR%/2-combine-uv2.blend"
+"%BLENDER_PATH%" --background --python scripts/coop-lightmap.py -- "%OUT_DIR%/2-combine-uv2.blend"
 
 REM Set fast64 stuff
-REM "%BLENDER_PATH%" --background --python scripts/set-fast64-stuff.py -- "%OUT_DIR%/4-coop-lightmap.blend"
+"%BLENDER_PATH%" --background --python scripts/set-fast64-stuff.py -- "%OUT_DIR%/4-coop-lightmap.blend"
 
 REM Export level
 "%BLENDER_PATH%" --background --python scripts/export-level.py -- "%OUT_DIR%/5-set-fast64.blend" "%BSP_NAME%" "%BLEND_EXPORT_PATH%"
