@@ -16,6 +16,20 @@ FuncDoor.State = {
     CLOSING  = 4,
 }
 
+FuncDoor.Flags = {
+    STARTS_OPEN       = 1 << 0,   -- 1
+    DONT_LINK         = 1 << 2,   -- 4
+    PASSABLE          = 1 << 3,   -- 8
+    TOGGLE            = 1 << 5,   -- 32
+    USE_ONLY          = 1 << 8,   -- 256
+    MONSTERS_CANT     = 1 << 9,   -- 512
+    NOT_IN_DEATHMATCH = 1 << 11,  -- 2048
+}
+
+local function has_flag(value, flag)
+    return (value & flag) ~= 0
+end
+
 function FuncDoor:new(ent, obj)
     local self = setmetatable({}, FuncDoor)
 
@@ -41,7 +55,22 @@ function FuncDoor:new(ent, obj)
     self.target_pos = self.closed_pos
     self.wait_timer = 0
 
+    -- STARTS_OPEN flag
+    if has_flag(ent.spawnflags or 0, FuncDoor.Flags.STARTS_OPEN) then
+        self.state = FuncDoor.State.OPEN
+        self.current_pos = { x = self.open_pos.x, y = self.open_pos.y, z = self.open_pos.z }
+        self.target_pos = self.open_pos
+    end
+
     return self
+end
+
+function FuncDoor:is_passable()
+    return has_flag(self.ent.spawnflags or 0, FuncDoor.Flags.PASSABLE)
+end
+
+function FuncDoor:should_link()
+    return not has_flag(self.ent.spawnflags or 0, FuncDoor.Flags.DONT_LINK)
 end
 
 function FuncDoor:compute_open_pos()
@@ -130,20 +159,50 @@ function FuncDoor:move()
 end
 
 function FuncDoor:trigger()
-    if self.state == FuncDoor.State.CLOSED
-    or self.state == FuncDoor.State.CLOSING then
+    local f = FuncDoor.Flags
+    local flags = self.ent.spawnflags or 0
 
-        self.state = FuncDoor.State.OPENING
-        self.target_pos = self.open_pos
+    if has_flag(flags, f.TOGGLE) then
+        if self.state == FuncDoor.State.OPEN then
+            self.state = FuncDoor.State.CLOSING
+            self.target_pos = self.closed_pos
+            return true
+        elseif self.state == FuncDoor.State.CLOSED then
+            self.state = FuncDoor.State.OPENING
+            self.target_pos = self.open_pos
+            return true
+        end
+    else
+        if self.state == FuncDoor.State.CLOSED
+        or self.state == FuncDoor.State.CLOSING then
+            self.state = FuncDoor.State.OPENING
+            self.target_pos = self.open_pos
+            return true
+        end
     end
+    return false
+end
+
+function FuncDoor:use()
+    return self:trigger()
 end
 
 function FuncDoor:update_state_machine()
+    local f = FuncDoor.Flags
+    local flags = self.ent.spawnflags or 0
+
     -- OPENING
     if self.state == FuncDoor.State.OPENING then
         if self:move() then
-            self.state = FuncDoor.State.WAITING
-            self.wait_timer = self.ent.wait or 2
+            if has_flag(flags, f.TOGGLE) then
+                -- Door has reached open pos; stay open until next trigger
+                self.state = FuncDoor.State.OPEN
+                self.target_pos = self.open_pos
+            else
+                -- Non-toggle: start WAITING timer before auto-closing
+                self.state = FuncDoor.State.WAITING
+                self.wait_timer = self.ent.wait or 2
+            end
         end
         return
     end
@@ -166,13 +225,23 @@ function FuncDoor:update_state_machine()
         return
     end
 
-    -- Proximity trigger
     local m = gMarioStates[0]
     local ent = self.ent
 
-    if m.floor.object == self.obj
+    -- Should we USE check?
+    if has_flag(self.ent.spawnflags or 0, f.USE_ONLY) then
+        return
+    end
+
+    -- Should we collision check?
+    if self:is_passable() then
+        return
+    end
+
+    -- Proximity trigger
+    if (m.floor.object == self.obj and m.floorHeight < 1)
     or (m.wall and m.wall.object == self.obj)
-    or goldsrc_intersects_aabb(m.pos, 150, ent)
+    or goldsrc_intersects_aabb(m.pos, 80, ent)
     then
         self:trigger()
     end
@@ -185,6 +254,10 @@ function FuncDoor:update()
     obj.oPosX = self.current_pos.x
     obj.oPosY = self.current_pos.y
     obj.oPosZ = self.current_pos.z
+
+    if not self:is_passable() then
+        load_object_collision_model()
+    end
 end
 
 -------------------------------------------------

@@ -14,6 +14,7 @@ if gGoldsrc == nil then
     gGoldsrc = {
         classes = {},
         levels = {},
+        objToEnt = {},
     }
 end
 
@@ -61,7 +62,7 @@ end
 -- Brush entity --
 ------------------
 
-function bhv_goldsrc_brush_init(obj)
+local function bhv_goldsrc_brush_init(obj)
     obj.oFlags = OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE
     obj.header.gfx.skipInViewCheck = true
     obj.oOpacity = 255
@@ -72,8 +73,9 @@ function bhv_goldsrc_brush_init(obj)
     obj.oMoveAngleYaw = 0
     obj.oMoveAngleRoll = 0
 
-    entity = goldsrc_get_entity(obj.oBehParams)
+    local entity = goldsrc_get_entity(obj.oBehParams)
     if entity ~= nil then
+        gGoldsrc.objToEnt[obj] = entity
         if entity._geo ~= nil then
             obj_set_model_extended(obj, entity._geo)
         else
@@ -93,12 +95,46 @@ function bhv_goldsrc_brush_init(obj)
     end
 end
 
-function bhv_goldsrc_brush_loop(obj)
-    entity = goldsrc_get_entity(obj.oBehParams)
+local function bhv_goldsrc_brush_loop(obj)
+    local entity = goldsrc_get_entity(obj.oBehParams)
     if entity ~= nil and entity._class ~= nil then
         entity._class:update()
     end
-    load_object_collision_model()
 end
 
 id_bhvGoldsrcBrush = hook_behavior(nil, OBJ_LIST_SURFACE, true, bhv_goldsrc_brush_init, bhv_goldsrc_brush_loop)
+
+-------------------
+-- Mario Actions --
+-------------------
+
+local function before_mario_update(m)
+    if m.playerIndex ~= 0 then
+        return
+    end
+
+    if m.controller.buttonPressed & B_BUTTON ~= 0 then
+        -- figure out dir
+        local yaw = m.faceAngle.y
+        local dir_x = sins(yaw) * 300
+        local dir_y = 120
+        local dir_z = coss(yaw) * 300
+
+        -- raycast for user
+        local ray = collision_find_surface_on_ray(m.pos.x, m.pos.y, m.pos.z, dir_x, dir_y, dir_z)
+        if ray.surface and ray.surface.object and vec3f_dist(ray.hitPos, m.pos) < 300 then
+            local obj = ray.surface.object
+            if gGoldsrc.objToEnt[obj] ~= nil then
+                local ent = gGoldsrc.objToEnt[obj]
+                local class = ent._class
+                if class ~= nil and class.use ~= nil and class:use() then
+                    m.controller.buttonPressed = (m.controller.buttonPressed & ~B_BUTTON)
+                    play_sound(SOUND_MENU_CLICK_FILE_SELECT, gGlobalSoundSource)
+                end
+            end
+        end
+    end
+end
+
+
+hook_event(HOOK_BEFORE_MARIO_UPDATE, before_mario_update)
