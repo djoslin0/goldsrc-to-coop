@@ -1,4 +1,4 @@
-@ECHO ON
+@ECHO OFF
 REM Set working directory to the batch file location
 CD /D "%~dp0"
 
@@ -15,7 +15,9 @@ IF "%BSP_FILE%"=="" (
 ECHO Using BSP file: "%BSP_FILE%"
 
 REM Set paths
+SET "PROMPT_FOR_HL_DIR_PATH=%~dp0\scripts\prompt-for-hl-dir.py"
 SET "BSPGUY_PATH=%~dp0\tools\bspguy\bspguy.exe"
+SET "BSPGUY_INI_PATH=%~dp0\tools\bspguy\bspguy.ini"
 SET "BLENDER_PATH=%~dp0\tools\blender-3.6.23-windows-x64\blender.exe"
 SET "BLEND_EXPORT_PATH=%~dp0\scripts\blend-export.blend"
 SET "CREATE_MAIN_LUA_PATH=%~dp0\scripts\create-main-lua.py"
@@ -23,7 +25,9 @@ SET "PYTHON_PATH=%~dp0\tools\blender-3.6.23-windows-x64\3.6\python\bin\python.ex
 SET SCALE=-22
 
 REM Check that important files exist
+IF NOT EXIST "%PROMPT_FOR_HL_DIR_PATH%" ECHO PROMPT_FOR_HL_DIR_PATH not found & PAUSE & EXIT /B
 IF NOT EXIST "%BSPGUY_PATH%" ECHO BSPGUY not found & PAUSE & EXIT /B
+IF NOT EXIST "%BSPGUY_INI_PATH%" ECHO BSPGUY_INI_PATH not found & PAUSE & EXIT /B
 IF NOT EXIST "%BLENDER_PATH%" ECHO Blender not found & PAUSE & EXIT /B
 IF NOT EXIST "%BLEND_EXPORT_PATH%" ECHO Blender export file not found & PAUSE & EXIT /B
 IF NOT EXIST "%BSP_FILE%" ECHO BSP file not found & PAUSE & EXIT /B
@@ -34,6 +38,14 @@ FOR %%F IN ("%BSP_FILE%") DO SET "BSP_NAME=%%~nF"
 REM Output directory
 SET "OUT_DIR=%~dp0\output\%BSP_NAME%"
 IF NOT EXIST "%OUT_DIR%" MD "%OUT_DIR%"
+
+REM Get/set the half life dir
+"%PYTHON_PATH%" "%PROMPT_FOR_HL_DIR_PATH%" "%BSPGUY_INI_PATH%"
+IF NOT %ERRORLEVEL%==0 (
+    ECHO ❌ Failed to set Half-Life directory. Exiting.
+    PAUSE
+    EXIT /B %ERRORLEVEL%
+)
 
 REM Run the command to convert BSP to OBJ and export the entities
 "%BSPGUY_PATH%" exportobj "%BSP_FILE%" -scale "%SCALE%" -lightmap "1" -o "%OUT_DIR%"
