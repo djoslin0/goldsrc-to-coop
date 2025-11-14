@@ -1,0 +1,1 @@
+Decompiled bsp files go in this directory.

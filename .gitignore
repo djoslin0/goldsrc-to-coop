@@ -1,0 +1,4 @@
+tools/*
+!tools/README.txt
+output/*
+!output/README.txt
