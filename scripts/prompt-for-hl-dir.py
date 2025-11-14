@@ -45,8 +45,8 @@ def rewrite_res_section(ini_path, hl_dir):
 def check_directory(dir):
     # Required WADs relative to HL directory
     required_files = [
-        os.path.join(dir, "valve", "halflife.wad"),
-        os.path.join(dir, "cstrike", "cstrike.wad")
+        os.path.join(dir, "valve", "halflife.wad")
+        #os.path.join(dir, "cstrike", "cstrike.wad")
     ]
     return [f for f in required_files if not os.path.isfile(f)]
 

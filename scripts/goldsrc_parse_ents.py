@@ -39,6 +39,12 @@ def interpret_position(entity, field, iscalar):
     x, y, z = map(float, entity[field].split())
     entity[field] = (x * iscalar, y * iscalar, z * iscalar)
 
+def interpret_angles(entity, field, iscalar):
+    if entity == None or field == None or field not in entity:
+        return
+    x, y, z = map(float, entity[field].split())
+    entity[field] = (x, y, z)
+
 def interpret_color(entity, field, iscalar):
     if entity == None or field == None or field not in entity:
         return
@@ -67,7 +73,7 @@ interpret_classes = {
         "classname": interpret_string,
         "targetname": interpret_string,
         "model": interpret_string,
-        "angle": interpret_int,
+        "angles": interpret_angles,
 
         "speed": interpret_float_scaled,
         "wait": interpret_float,

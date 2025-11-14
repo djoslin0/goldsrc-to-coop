@@ -26,12 +26,12 @@ def collect_register_objects(output_dir):
         folder_path = os.path.join(actors_dir, folder)
         if not os.path.isdir(folder_path):
             continue
-        
+
         # Match folders ending with _ent_NUMBER
         match = re.search(r'_ent_(\d+)$', folder)
         if not match:
             continue
-        
+
         entity_index = int(match.group(1))
         geo = os.path.exists(os.path.join(folder_path, "geo.inc.c"))
         col = os.path.exists(os.path.join(folder_path, "collision.inc.c"))
@@ -44,6 +44,9 @@ def collect_register_objects(output_dir):
 
     return output
 
+def get_aabbs(path):
+    with open(path, 'r') as f:
+        return f.read()
 
 def main():
     if len(sys.argv) < 4:
@@ -74,6 +77,7 @@ def main():
             .replace("$LEVELUNAME", leveluname)
             .replace("$ENTITIES", convert_entities_to_lua(entities_path, bspguy_scale))
             .replace("$REGISTER_OBJECTS", collect_register_objects(output_dir))
+            .replace("$AABBS", get_aabbs(os.path.join("output", levelname, "aabb.lua")))
             .strip())
 
     print(f"✅ Mod generated at: {output_dir}")

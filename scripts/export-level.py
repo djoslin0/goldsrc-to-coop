@@ -2,6 +2,7 @@ import bpy
 import os
 import sys
 import bmesh
+import mathutils
 
 export_classes_as_objects = [
     'func_door'
@@ -226,6 +227,31 @@ def export_level(levels_folder, level_name):
     bpy.ops.object.sm64_export_level()
 
 
+def calculate_aabb_lua():
+    output = ''
+    for obj in bpy.data.objects:
+        if obj.name.startswith("M_"):
+            # Parse entity index from the object name
+            entity_index = int(obj.name.rsplit('#', 1)[0].rsplit('_', 1)[-1])
+            
+            # Calculate world bounding box by transforming each corner
+            aabb_world = [obj.matrix_world @ mathutils.Vector(corner) for corner in obj.bound_box]
+            
+            # Sm64 Scalar
+            sm64_scalar = 100
+
+            # Extract min/max coordinates
+            min_x = round(min(v.x for v in aabb_world) * sm64_scalar)
+            min_y = round(min(v.y for v in aabb_world) * sm64_scalar)
+            min_z = round(min(v.z for v in aabb_world) * sm64_scalar)
+            max_x = round(max(v.x for v in aabb_world) * sm64_scalar)
+            max_y = round(max(v.y for v in aabb_world) * sm64_scalar)
+            max_z = round(max(v.z for v in aabb_world) * sm64_scalar)
+            
+            output += f'entities[{entity_index+1}]._aabb = {{ min = {{ {min_x}, {min_z}, {-min_y} }}, max = {{ {max_x}, {max_z}, {-max_y} }} }}\n'
+
+    return output
+
 def main():
     # -----------------------
     # Get .blend file from command-line arguments
@@ -276,6 +302,10 @@ def main():
     process_blender_objects(actors_folder, level_name)
 
     move_warpentry_to_spawn()
+
+    # Export AABBs
+    with open(os.path.join(folder, "aabb.lua"), 'w') as f:
+        f.write(calculate_aabb_lua())
 
     # Export level
     export_level(levels_folder, level_name)
