@@ -1,7 +1,6 @@
 import bpy
 import os
 import sys
-import bpy
 import re
 
 def parse_entities(filepath):
@@ -27,11 +26,8 @@ def parse_entities(filepath):
         for key, value in pairs:
             entity[key] = value
 
-        classname = entity.get("classname", "<no classname>")
-        print(f"  Entity {i}: {classname}, {len(pairs)} properties")
         entities.append(entity)
-    
-    print(f"✅ Finished parsing {len(entities)} entities total")
+
     return entities
 
 
@@ -39,8 +35,15 @@ def parse_entities(filepath):
 def import_entities_to_blender(filepath, scalar):
     scalar = 1 / -scalar
     entities = parse_entities(filepath)
-    print(f"Parsed {len(entities)} entities")
 
+    # Get or create "Entities" collection
+    if "Entities" not in bpy.data.collections:
+        entities_collection = bpy.data.collections.new("Entities")
+        bpy.context.scene.collection.children.link(entities_collection)
+    else:
+        entities_collection = bpy.data.collections["Entities"]
+
+    ent_index = 0
     for ent in entities:
         classname = ent.get("classname", "unknown")
         origin_str = ent.get("origin")
@@ -53,13 +56,14 @@ def import_entities_to_blender(filepath, scalar):
                 pass
 
         # Create an Empty in Blender for each entity
-        obj = bpy.data.objects.new(classname, None)
+        obj = bpy.data.objects.new(f"{ent_index}#{classname}", None)
         obj.location = origin
-        bpy.context.scene.collection.objects.link(obj)
+        entities_collection.objects.link(obj)  # Link to Entities collection instead
 
         # Store all key/values as custom properties
         for k, v in ent.items():
             obj[k] = v
+        ent_index += 1
 
     print("Entity import complete.")
 
@@ -88,7 +92,6 @@ if not os.path.isdir(folder_path):
 # -----------------------
 bpy.ops.object.select_all(action='SELECT')
 bpy.ops.object.delete(use_global=False)
-print("Deleted default cube, camera, light, etc.")
 
 # -----------------------
 # Import OBJ files

@@ -3,6 +3,10 @@ import os
 import sys
 import bmesh
 
+export_classes_as_objects = [
+    'func_door'
+]
+
 def append_blend_objects(blend_path, object_names=None):
     """
     Append objects from another .blend file into the current scene.
@@ -27,40 +31,121 @@ def append_blend_objects(blend_path, object_names=None):
             bpy.context.scene.collection.objects.link(obj)
             print(f"Appended object: {obj.name}")
 
-def reparent_m_objects():
+
+def export_object(objects_collection, area_obj, actors_folder, level_name, blender_object, entity_index):
+    # Change parent / collection
+    for col in blender_object.users_collection:
+        col.objects.unlink(blender_object)
+    blender_object.parent = None
+    objects_collection.objects.link(blender_object)
+
+    # Select blender object in object mode
+    bpy.ops.object.select_all(action='DESELECT')
+    blender_object.select_set(True)
+    bpy.context.view_layer.objects.active = blender_object
+
+    # Export visuals
+    bpy.data.scenes["Scene"].geoTexDir = f'actors/{level_name}_ent_{entity_index}'
+    bpy.data.scenes["Scene"].geoCustomExport = True
+    bpy.data.scenes["Scene"].geoExportPath = actors_folder
+    bpy.data.scenes["Scene"].geoName = f'{level_name}_ent_{entity_index}'
+    bpy.data.scenes["Scene"].geoStructName = f'{level_name}_ent_{entity_index}_geo'
+    bpy.ops.object.sm64_export_geolayout_object()
+
+    # Export collision
+    bpy.data.scenes["Scene"].colCustomExport = True
+    bpy.data.scenes["Scene"].colExportPath = actors_folder
+    bpy.data.scenes["Scene"].colName = f'{level_name}_ent_{entity_index}'
+    bpy.ops.object.sm64_export_collision()
+
+    # Find empty entity
+    classname = blender_object.name.rsplit('#', 1)[-1]
+    entity = None
+    for obj in bpy.data.objects:
+        if obj.type == 'EMPTY' and obj.name == f'{entity_index}#{classname}':
+            entity = obj
+            break
+    
+    if entity is None:
+        print(f"Warning: No entity found for index {entity_index} with classname {classname}")
+        return
+
+    # Set empty's values
+    entity.sm64_obj_type = 'Object'
+    entity.sm64_obj_model = 'E_MODEL_NONE'
+    entity.sm64_obj_behaviour = 'id_bhvGoldsrcBrush'
+    entity.fast64.sm64.game_object.use_individual_params = False
+    entity.fast64.sm64.game_object.bparams = hex(entity_index)
+    
+    # Change empty's parent / collection
+    for col in entity.users_collection:
+        col.objects.unlink(entity)
+    entity.parent = area_obj
+    #entity.matrix_parent_inverse = area_obj.matrix_world.inverted()
+
+    # Ensure object is in the area collection
+    parent_collection = area_obj.users_collection[0] if area_obj.users_collection else None
+    if parent_collection is None:
+        print(f"'Area' is not in any collection. Using scene master collection.")
+        parent_collection = bpy.context.scene.collection
+
+    if obj.name not in parent_collection.objects:
+        parent_collection.objects.link(entity)
+
+
+def process_blender_objects(actors_folder, level_name):
+    # Get or create "Objects" collection
+    if "Objects" not in bpy.data.collections:
+        objects_collection = bpy.data.collections.new("Objects")
+        bpy.context.scene.collection.children.link(objects_collection)
+    else:
+        objects_collection = bpy.data.collections["Objects"]
+
     # Unhide all objects first
     for obj in bpy.data.objects:
         obj.hide_set(False)
         obj.hide_viewport = False
         obj.hide_render = False
 
-    parent_obj = bpy.data.objects.get("Area")
-    if parent_obj is None:
+    area_obj = bpy.data.objects.get("Area")
+    if area_obj is None:
         print("Object 'Area' not found.")
         return
 
     # Get the collection that contains the parent object
-    parent_collection = parent_obj.users_collection[0] if parent_obj.users_collection else None
+    parent_collection = area_obj.users_collection[0] if area_obj.users_collection else None
     if parent_collection is None:
         print(f"'Area' is not in any collection. Using scene master collection.")
         parent_collection = bpy.context.scene.collection
 
     for obj in bpy.data.objects:
         if obj.name.startswith("M_"):
-            # Set parent
-            obj.parent = parent_obj
-            obj.matrix_parent_inverse = parent_obj.matrix_world.inverted()
-
-            # Remove from all collections except the parent collection
+            # Remove from all collections
             for col in obj.users_collection:
-                if col != parent_collection:
-                    col.objects.unlink(obj)
+                col.objects.unlink(obj)
+
+            # Get classname and entity index
+            classname = obj.name.rsplit('#', 1)[-1]
+            entity_index = int(obj.name.rsplit('#', 1)[0].rsplit('_', 1)[-1])
+
+            # Set parent
+            obj.parent = area_obj
+            #obj.matrix_parent_inverse = area_obj.matrix_world.inverted()
 
             # Ensure object is in the parent collection
             if obj.name not in parent_collection.objects:
                 parent_collection.objects.link(obj)
 
-            print(f"{obj.name} parented to {parent_obj.name} and placed in {parent_collection.name}")
+            # Select blender object in object mode
+            bpy.ops.object.select_all(action='DESELECT')
+            obj.select_set(True)
+            bpy.context.view_layer.objects.active = obj
+            bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+
+            # Export object or parent it to level's area
+            if classname in export_classes_as_objects:
+                export_object(objects_collection, area_obj, actors_folder, level_name, obj, entity_index)
+
 
 def triangulate_and_merge_all(threshold=1e-5):
     processed = 0
@@ -96,20 +181,21 @@ def triangulate_and_merge_all(threshold=1e-5):
     print(f"Done. Processed {processed} mesh objects.")
     return processed
 
+
 def move_warpentry_to_spawn():
     """Find an info_player_start or info_player_deathmatch and move WarpEntry there."""
     spawn_obj = None
 
     # Look for info_player_start
     for obj in bpy.data.objects:
-        if obj.name.startswith("info_player_start"):
+        if obj.name.split('#', 1)[-1].startswith("info_player_start"):
             spawn_obj = obj
             break
 
     # If not found, look for info_player_deathmatch
     if spawn_obj is None:
         for obj in bpy.data.objects:
-            if obj.name.startswith("info_player_deathmatch"):
+            if obj.name.split('#', 1)[-1].startswith("info_player_deathmatch"):
                 spawn_obj = obj
                 break
 
@@ -126,6 +212,7 @@ def move_warpentry_to_spawn():
     warp_entry.location = spawn_obj.location.copy()
     print(f"WarpEntry moved to {spawn_obj.name} at {spawn_obj.location}")
 
+
 def export_level(levels_folder, level_name):
     # Select 'Level'
     level_obj = bpy.data.objects.get("Level")
@@ -133,14 +220,11 @@ def export_level(levels_folder, level_name):
     level_obj.select_set(True)
     bpy.context.view_layer.objects.active = level_obj
 
-    bpy.data.scenes["Scene"].exportHiddenGeometry = False
-    bpy.data.scenes["Scene"].saveTextures = True
-    bpy.data.scenes["Scene"].ignoreTextureRestrictions = True
-
     bpy.data.scenes["Scene"].levelCustomExport = True
     bpy.data.scenes["Scene"].levelExportPath = levels_folder
     bpy.data.scenes["Scene"].levelName = level_name
     bpy.ops.object.sm64_export_level()
+
 
 def main():
     # -----------------------
@@ -156,13 +240,13 @@ def main():
         print("Usage: blender --background --python export-level.py -- BLEND_FILE LEVEL_NAME APPEND_BLEND")
         sys.exit(1)
 
-
+    # grab commandline params
     blend_file_path = argv[0]
     level_name = argv[1]
     append_file_path = argv[2]
 
+    # grab folder
     folder = os.path.dirname(blend_file_path)
-
     if not os.path.isfile(blend_file_path):
         print(f"Error: .blend file does not exist: {blend_file_path}")
         sys.exit(1)
@@ -177,12 +261,19 @@ def main():
     mod_folder = os.path.join(folder, "mod")
     levels_folder = os.path.join(mod_folder, "levels")
     os.makedirs(levels_folder, exist_ok=True)
+    actors_folder = os.path.join(mod_folder, "actors")
+    os.makedirs(actors_folder, exist_ok=True)
 
-    # Perform reparenting
-    reparent_m_objects()
+    # Setup export settings
+    bpy.data.scenes["Scene"].exportHiddenGeometry = False
+    bpy.data.scenes["Scene"].saveTextures = True
+    bpy.data.scenes["Scene"].ignoreTextureRestrictions = True
 
     # Triangulate and merge all meshes
     triangulate_and_merge_all()
+
+    # Perform reparenting and exporting
+    process_blender_objects(actors_folder, level_name)
 
     move_warpentry_to_spawn()
 

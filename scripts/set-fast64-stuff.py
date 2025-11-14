@@ -4,6 +4,7 @@ import sys
 
 trigger_names = [
     "func_vehiclecontrols",
+    "func_tankcontrols",
     "func_bomb_target",
     "func_hostage_rescue",
     "func_buyzone",
@@ -28,7 +29,6 @@ def set_fast64_stuff():
 
             if brush_type == "func_illusionary":
                 obj["ignore_collision"] = True
-                print(f"{obj_name}: brush_type is 'func_breakable', ignore_collision set to True")
             elif brush_type == "func_clip":
                 obj["ignore_render"] = True
             elif brush_type in trigger_names or brush_type.startswith('trigger_'):
@@ -50,7 +50,6 @@ def set_fast64_stuff():
             if mat and (mat.name == "sky_f3d" or mat.name.startswith("sky_LM")):
                 mat.f3d_mat.draw_layer.sm64 = '4'
                 mat.f3d_mat.combiner1.D_alpha = '0'
-                print(f"Set D_alpha = '0' for material {mat.name} on object {obj.name}")
 
                 # Update the material's cache using context override
                 override = bpy.context.copy()
@@ -60,7 +59,6 @@ def set_fast64_stuff():
             elif mat and mat.name[0] == '{':
                 mat.f3d_mat.draw_layer.sm64 = '4'
                 mat.f3d_mat.combiner1.D_alpha = 'TEXEL0'
-                print(f"Set D_alpha = '0' for material {mat.name} on object {obj.name}")
 
                 # Update the material's cache using context override
                 override = bpy.context.copy()
