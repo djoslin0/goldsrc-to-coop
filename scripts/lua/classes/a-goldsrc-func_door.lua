@@ -4,8 +4,13 @@
 
 -- TODO: implement
 -- Name (targetname) - Property used to identify entities. Leave empty to make it usable by players; otherwise named doors must be triggered by other entities to operate.
+-- Master (master) <targetname> Name of a master entity. If the master hasn't been activated, this entity will not activate. A door with a master will be locked until the master condition is fulfilled.
 -- Target (target) - When the door is opened, it triggers the entity with the name specified by Target.
--- Delay before fire (delay)
+-- Delay before fire (delay) ???
+-- KillTarget (killtarget) - When the door is triggered, it will remove the entity specified by this property from the game.
+-- Fire on Close (netname) ???
+-- Damage inflicted when blocked (dmg) - How much damage the player receives if he gets stuck between the door and something solid.
+-- Message if triggered (message)
 
 local FuncDoor = {}
 FuncDoor.__index = FuncDoor
@@ -189,6 +194,10 @@ function FuncDoor:trigger()
 end
 
 function FuncDoor:use()
+    local flags = self.ent.spawnflags or 0
+    if not has_flag(flags, FuncDoor.Flags.USE_ONLY) then
+        return false
+    end
     return self:trigger()
 end
 
@@ -231,7 +240,6 @@ function FuncDoor:update_state_machine()
     end
 
     local m = gMarioStates[0]
-    local ent = self.ent
 
     -- Should we USE check?
     if has_flag(self.ent.spawnflags or 0, f.USE_ONLY) then
@@ -244,10 +252,7 @@ function FuncDoor:update_state_machine()
     end
 
     -- Proximity trigger
-    if (m.floor.object == self.obj and m.floorHeight < 1)
-    or (m.wall and m.wall.object == self.obj)
-    or goldsrc_intersects_aabb(m.pos, 80, ent)
-    then
+    if goldsrc_is_touching_obj(m, self.obj) then
         self:trigger()
     end
 end

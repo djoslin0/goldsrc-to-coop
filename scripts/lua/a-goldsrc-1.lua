@@ -6,21 +6,37 @@
 
 gLevelValues.fixCollisionBugs = 1
 
----------------------------
--- Create goldsrc global --
----------------------------
+----------------------
+-- Create variables --
+----------------------
 
 if gGoldsrc == nil then
     gGoldsrc = {
         classes = {},
         levels = {},
-        objToEnt = {},
     }
 end
+
+-- These variables must be cleared on level init
+local sAttackCache = {}
+local sObjToEnt = {}
+local sCachedLevelNum = -1
+local sTriggerQueue = {}
+local sGoldsrcTime = 0
 
 ---------------
 -- Utilities --
 ---------------
+
+function goldsrc_after_level_defined(level_dict)
+    -- remember targetnameToEnt
+    level_dict.targetnameToEnt = {}
+    for _, ent in ipairs(level_dict.entities) do
+        if ent.targetname ~= nil then
+            level_dict.targetnameToEnt[ent.targetname] = ent
+        end
+    end
+end
 
 function goldsrc_add_class(classname, init_function)
     gGoldsrc.classes[classname] = init_function
@@ -38,6 +54,27 @@ function goldsrc_get_entity(entity_index)
     end
 
     return entities[idx]
+end
+
+function goldsrc_get_ent_from_target_name(target_name)
+    local level_dict = gGoldsrc.levels[sCachedLevelNum]
+    if not level_dict then return nil end
+    return level_dict.targetnameToEnt[target_name]
+end
+
+function goldsrc_fire_target(target_name, activator, caller, use_type, value, delay)
+    -- get and validate target
+    local target = goldsrc_get_ent_from_target_name(target_name)
+    if target == nil then return end
+    if target._class == nil then return end
+    if target._class.trigger == nil then return end
+
+    -- trigger or queue
+    if delay <= 0 then
+        target._class:trigger(target_name, activator, caller, use_type, value)
+    else
+        sTriggerQueue[#sTriggerQueue+1] = { sGoldsrcTime + delay, target_name, activator, caller, use_type, value }
+    end
 end
 
 function goldsrc_intersects_aabb(pos, radius, ent)
@@ -58,6 +95,66 @@ function goldsrc_intersects_aabb(pos, radius, ent)
     return dist_sq <= radius*radius
 end
 
+function goldsrc_is_standing_on_obj(m, obj)
+    return m.floor.object == obj and (m.action & (ACT_FLAG_STATIONARY|ACT_FLAG_MOVING)) ~= 0
+end
+
+function goldsrc_is_touching_obj(m, obj)
+    return (m.floor.object == obj and (m.action & (ACT_FLAG_STATIONARY|ACT_FLAG_MOVING)) ~= 0)
+        or (m.wall and m.wall.object == obj)
+end
+
+local function is_attacking_obj(m, obj)
+    if not goldsrc_is_touching_obj(m, obj) then
+        return false
+    end
+
+    local action = m.action
+
+    -- Must be an attacking action
+    if (action & ACT_FLAG_ATTACKING) == 0 then
+        return false
+    end
+
+    -- Standard attacks
+    if (m.flags & (MARIO_PUNCHING | MARIO_KICKING | MARIO_TRIPPING)) ~= 0 then
+        return true
+    end
+
+    -- Ground pound actions
+    if (action == ACT_GROUND_POUND and m.vel.y < 0) or
+       (action == ACT_GROUND_POUND_LAND and m.vel.y < 0 and m.actionState == 0) then
+        return true
+    end
+
+    -- Slide kick actions
+    if action == ACT_SLIDE_KICK or action == ACT_SLIDE_KICK_SLIDE then
+        return true
+    end
+
+    -- Shell riding
+    if (action & ACT_FLAG_RIDING_SHELL) ~= 0 then
+        return true
+    end
+
+    return false
+end
+
+function goldsrc_is_attacking_obj(m, obj)
+    if sAttackCache[obj] == m then
+        return false
+    end
+
+    attacking = is_attacking_obj(m, obj)
+
+    -- Save in cache to prevent double attacks
+    if attacking then
+        sAttackCache[obj] = m
+    end
+
+    return attacking
+end
+
 ------------------
 -- Brush entity --
 ------------------
@@ -75,7 +172,7 @@ local function bhv_goldsrc_brush_init(obj)
 
     local entity = goldsrc_get_entity(obj.oBehParams)
     if entity ~= nil then
-        gGoldsrc.objToEnt[obj] = entity
+        sObjToEnt[obj] = entity
         if entity._geo ~= nil then
             obj_set_model_extended(obj, entity._geo)
         else
@@ -104,9 +201,9 @@ end
 
 id_bhvGoldsrcBrush = hook_behavior(nil, OBJ_LIST_SURFACE, true, bhv_goldsrc_brush_init, bhv_goldsrc_brush_loop)
 
--------------------
--- Mario Actions --
--------------------
+-----------
+-- Hooks --
+-----------
 
 local function before_mario_update(m)
     if m.playerIndex ~= 0 then
@@ -124,8 +221,8 @@ local function before_mario_update(m)
         local ray = collision_find_surface_on_ray(m.pos.x, m.pos.y, m.pos.z, dir_x, dir_y, dir_z)
         if ray.surface and ray.surface.object and vec3f_dist(ray.hitPos, m.pos) < 291 then
             local obj = ray.surface.object
-            if gGoldsrc.objToEnt[obj] ~= nil then
-                local ent = gGoldsrc.objToEnt[obj]
+            if sObjToEnt[obj] ~= nil then
+                local ent = sObjToEnt[obj]
                 local class = ent._class
                 if class ~= nil and class.use ~= nil and class:use() then
                     m.controller.buttonPressed = (m.controller.buttonPressed & ~B_BUTTON)
@@ -136,5 +233,55 @@ local function before_mario_update(m)
     end
 end
 
-
 hook_event(HOOK_BEFORE_MARIO_UPDATE, before_mario_update)
+
+local function update()
+    -- update time
+    sGoldsrcTime = sGoldsrcTime + 1 / 30
+
+    -- update attack cache
+    if next(sAttackCache) ~= nil then
+        -- figure out which attack events to forget
+        local remove = {}
+        for k, v in pairs(sAttackCache) do
+            if not is_attacking_obj(v, k) then
+                table.insert(remove, k)
+            end
+        end
+
+        -- Remove the collected keys
+        for _, k in ipairs(remove) do
+            sAttackCache[k] = nil
+        end
+    end
+
+    -- trigger queues and remove from them
+    local i = 1
+    while i <= #sTriggerQueue do
+        local t = sTriggerQueue[i]
+        if t[1] <= sGoldsrcTime then
+            goldsrc_fire_target(t[2], t[3], t[4], t[5], t[6], 0)
+            table.remove(sTriggerQueue, i)
+        else
+            i = i + 1
+        end
+    end
+end
+
+hook_event(HOOK_UPDATE, update)
+
+local function on_level_init()
+    local level_dict = gGoldsrc.levels[sCachedLevelNum]
+    if level_dict ~= nil then
+        for _, ent in ipairs(level_dict.entities) do
+            ent._class = nil
+        end
+    end
+
+    sAttackCache = {}
+    sObjToEnt = {}
+    sCachedLevelNum = gNetworkPlayers[0].currLevelNum
+    sGoldsrcTime = 0
+end
+
+hook_event(HOOK_ON_LEVEL_INIT, on_level_init)

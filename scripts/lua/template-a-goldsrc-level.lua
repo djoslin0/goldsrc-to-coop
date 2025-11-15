@@ -28,3 +28,7 @@ $REGISTER_OBJECTS
 --------------------
 
 $AABBS
+
+------------------------
+
+goldsrc_after_level_defined(gGoldsrc.levels[LEVEL_$LEVELUNAME])

@@ -5,9 +5,16 @@ CD /D "%~dp0"
 REM Get the first argument (dragged file)
 SET "BSP_FILE=%~1"
 
-REM Parse optional --output-mod parameter
+REM Parse optional parameters
 SET "OUTPUT_MOD_PATH="
-IF "%~2"=="--output-mod" SET "OUTPUT_MOD_PATH=%~3"
+SET "LUA_ONLY=0"
+IF "%~2"=="--output-mod" (
+    SET "OUTPUT_MOD_PATH=%~3"
+    IF "%~4"=="--lua-only" SET "LUA_ONLY=1"
+) ELSE IF "%~2"=="--lua-only" (
+    SET "LUA_ONLY=1"
+    IF "%~3"=="--output-mod" SET "OUTPUT_MOD_PATH=%~4"
+)
 
 REM Check that a file was actually provided
 IF "%BSP_FILE%"=="" (
@@ -51,6 +58,8 @@ IF NOT %ERRORLEVEL%==0 (
     EXIT /B %ERRORLEVEL%
 )
 
+IF "%LUA_ONLY%"=="1" GOTO :skip_conversion
+
 REM Run the command to convert BSP to OBJ and export the entities
 "%BSPGUY_PATH%" exportobj "%BSP_FILE%" -scale "%SCALE%" -lightmap "1" -o "%OUT_DIR%"
 "%BSPGUY_PATH%" exportent "%BSP_FILE%" -o "%OUT_DIR%\entities.txt"
@@ -72,6 +81,8 @@ REM Set fast64 stuff
 
 REM Export level
 "%BLENDER_PATH%" --background --python scripts/blender/export-level.py -- "%OUT_DIR%/5-set-fast64.blend" "%BSP_NAME%" "%BLEND_EXPORT_PATH%"
+
+:skip_conversion
 
 REM Create lua files
 "%PYTHON_PATH%" "%CREATE_LUA_PATH%" "%BSP_NAME%" "%OUT_DIR%/entities.txt" "%SCALE%"
