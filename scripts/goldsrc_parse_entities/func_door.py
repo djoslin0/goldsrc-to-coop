@@ -8,6 +8,7 @@ parse_classes['func_door'] = {
     "globalname": parse_string,
     "master": parse_string,
 
+    "angle": parse_float,
     "angles": parse_angles,
     "target": parse_string,
     "delay": parse_float,

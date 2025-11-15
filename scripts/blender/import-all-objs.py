@@ -2,6 +2,7 @@ import bpy
 import os
 import sys
 import re
+import math
 
 def parse_entities(filepath):
     """Parse a GoldSrc-style entity lump file into a list of dicts, with simple logging."""
@@ -55,9 +56,20 @@ def import_entities_to_blender(filepath, scalar):
             except ValueError:
                 pass
 
+        # TODO: This is a hack.. im not sure where I went wrong lol
+        angles_str = ent.get("angles")
+        angles = (0, 0, 0)
+        if angles_str and (classname == 'info_player_start' or classname == 'info_player_deathmatch'):
+            try:
+                x, y, z = map(float, angles_str.split())
+                angles = (x, z, y + 90)
+            except ValueError:
+                pass
+
         # Create an Empty in Blender for each entity
         obj = bpy.data.objects.new(f"{ent_index}#{classname}", None)
         obj.location = origin
+        obj.rotation_euler = (math.radians(angles[0]), math.radians(angles[1]), math.radians(angles[2]))
         entities_collection.objects.link(obj)  # Link to Entities collection instead
 
         # Store all key/values as custom properties

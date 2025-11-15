@@ -14,6 +14,7 @@ if gGoldsrc == nil then
     gGoldsrc = {
         classes = {},
         levels = {},
+        toSm64Scalar = 100/22,
     }
 end
 
@@ -60,6 +61,11 @@ function goldsrc_get_entity(entity_index)
     end
 
     return entities[idx]
+end
+
+function goldsrc_get_entities()
+    local levelnum = gNetworkPlayers[0].currLevelNum
+    return gGoldsrc.levels[levelnum].entities
 end
 
 function goldsrc_get_ent_from_target_name(target_name)
@@ -129,6 +135,34 @@ function goldsrc_intersects_aabb(pos, radius, ent)
     return dist_sq <= radius*radius
 end
 
+function goldsrc_apply_radius_damage(x, y, z, radius, damage)
+    local entities = gGoldsrc.levels[sCachedLevelNum].entities
+    for _, ent in ipairs(entities) do
+        if ent._class and ent._class.obj and ent._class.apply_damage then
+            local class = ent._class
+            local obj = class.obj
+
+            local dx = obj.oPosX - x
+            local dy = obj.oPosY - y
+            local dz = obj.oPosZ - z
+            local dist = math.sqrt(dx*dx + dy*dy + dz*dz)
+
+            if dist <= radius then
+                local dmgToApply = damage * (1 - dist / radius)
+                dmgToApply = math.max(0, dmgToApply)
+                class:apply_damage(dmgToApply)
+
+                -- TODO: push?
+                --if obj.is_pushable then
+                --    obj.vx = obj.vx + dx/dist * dmgToApply
+                --    obj.vy = obj.vy + dy/dist * dmgToApply
+                --    obj.vz = obj.vz + dz/dist * dmgToApply
+                --end
+            end
+        end
+    end
+end
+
 function goldsrc_is_standing_on_obj(m, obj)
     return m.floor.object == obj and (m.action & (ACT_FLAG_STATIONARY|ACT_FLAG_MOVING)) ~= 0
 end
@@ -192,6 +226,7 @@ end
 -------------
 -- Effects --
 -------------
+
 function goldsrc_spawn_triangle_break_particles(obj, numTris, triModel, triSize, triAnimState)
     for i = 1, numTris do
         local triangle = spawn_non_sync_object(id_bhvBreakBoxTriangle, triModel, obj.oPosX, obj.oPosY, obj.oPosZ, nil)

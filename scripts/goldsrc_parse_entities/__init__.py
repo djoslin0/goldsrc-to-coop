@@ -21,8 +21,11 @@ def parse_angles(entity, field, iscalar):
 def parse_color(entity, field, iscalar):
     if entity == None or field == None or field not in entity:
         return
-    x, y, z = map(int, entity[field].split())
-    entity[field] = (x, y, z)
+    try:
+        x, y, z = map(int, entity[field].split())
+        entity[field] = (x, y, z)
+    except:
+        pass
 
 def parse_int(entity, field, iscalar):
     if entity == None or field == None or field not in entity:

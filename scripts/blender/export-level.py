@@ -3,6 +3,7 @@ import os
 import sys
 import bmesh
 import mathutils
+import re
 from mathutils import Vector
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -193,21 +194,33 @@ def triangulate_and_merge_all(threshold=1e-5):
 
 
 def move_warpentry_to_spawn():
-    """Find an info_player_start or info_player_deathmatch and move WarpEntry there."""
+    """Find the info_player_start or info_player_deathmatch with the lowest index and move WarpEntry there."""
     spawn_obj = None
+    lowest_index = None
 
-    # Look for info_player_start
+    # Helper to extract number before '#' in object name
+    def get_index(obj_name):
+        match = re.match(r'(\d+)', obj_name.split('#', 1)[0])
+        return int(match.group(1)) if match else None
+
+    # Look for info_player_start objects
     for obj in bpy.data.objects:
-        if obj.name.split('#', 1)[-1].startswith("info_player_start"):
-            spawn_obj = obj
-            break
+        name_part = obj.name.split('#', 1)[-1]
+        if name_part.startswith("info_player_start"):
+            idx = get_index(obj.name)
+            if idx is not None and (lowest_index is None or idx < lowest_index):
+                spawn_obj = obj
+                lowest_index = idx
 
     # If not found, look for info_player_deathmatch
     if spawn_obj is None:
         for obj in bpy.data.objects:
-            if obj.name.split('#', 1)[-1].startswith("info_player_deathmatch"):
-                spawn_obj = obj
-                break
+            name_part = obj.name.split('#', 1)[-1]
+            if name_part.startswith("info_player_deathmatch"):
+                idx = get_index(obj.name)
+                if idx is not None and (lowest_index is None or idx < lowest_index):
+                    spawn_obj = obj
+                    lowest_index = idx
 
     if spawn_obj is None:
         print("No spawn object found (info_player_start or info_player_deathmatch).")
@@ -220,6 +233,7 @@ def move_warpentry_to_spawn():
 
     # Move WarpEntry to spawn position
     warp_entry.location = spawn_obj.location.copy()
+    warp_entry.rotation_euler = spawn_obj.rotation_euler
     print(f"WarpEntry moved to {spawn_obj.name} at {spawn_obj.location}")
 
 

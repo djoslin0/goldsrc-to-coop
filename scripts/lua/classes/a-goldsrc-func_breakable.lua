@@ -2,6 +2,11 @@
 -- func_breakable.lua  --
 -------------------------
 
+-- TODO: implement
+-- material-specific gibs and sounds
+-- fix up explosion
+-- func_breakables can get crushed by other brushes
+
 local FuncBreakable = {}
 FuncBreakable.__index = FuncBreakable
 
@@ -69,6 +74,19 @@ function FuncBreakable:break_now()
     self:play_break_sound()
     self:spawn_gibs()
 
+    -- Explode
+    local magnitude = self.ent.explodemagnitude or 0
+    if magnitude > 0 then
+        local obj = self.obj
+        local explosion = spawn_non_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, obj.oPosX, obj.oPosY, obj.oPosZ, nil)
+        if explosion then explosion.oGraphYOffset = explosion.oGraphYOffset + 100 end
+
+        -- TODO: while this calculation more-or-less matches what I can find online.. it isn't 1-to-1. Online the 5 is 2.5, but it didn't match what I saw
+        local radius = magnitude * gGoldsrc.toSm64Scalar * 5
+        local damage = magnitude
+        goldsrc_apply_radius_damage(obj.oPosX, obj.oPosY, obj.oPosZ, radius, damage)
+    end
+
     -- Hide object / disable collision
     self.obj.header.gfx.node.flags = self.obj.header.gfx.node.flags | GRAPH_RENDER_INVISIBLE
 
@@ -81,6 +99,11 @@ end
 
 function FuncBreakable:apply_damage(dmg)
     if self.state == FuncBreakable.State.DEAD then
+        return
+    end
+
+    -- check for unbreakable
+    if self.ent.health == -1 then
         return
     end
 
@@ -134,7 +157,7 @@ function FuncBreakable:update()
         if has_flag(flags, FuncBreakable.Flags.INSTANT_CROWBAR) then
             self:break_now()
         else
-            self:apply_damage(9)
+            self:apply_damage(34)
         end
     end
 

@@ -35,6 +35,10 @@ local function has_flag(value, flag)
     return (value & flag) ~= 0
 end
 
+-------------------------------------------------
+-- Constructor
+-------------------------------------------------
+
 function FuncDoor:new(ent, obj)
     local self = setmetatable({}, FuncDoor)
 
@@ -53,6 +57,19 @@ function FuncDoor:new(ent, obj)
         y = obj.oPosY,
         z = obj.oPosZ,
     }
+
+    -- deal with undocumented 'angle'
+    if not self.ent.angles and self.ent.angle ~= nil then
+        local yaw = self.ent.angle
+        if yaw == -1 then
+            self.ent.angles = { -90, 0, 0 }
+        elseif yaw == -2 then
+            self.ent.angles = { 90, 0, 0 }
+        else
+            self.ent.angles = { 0, yaw, 0 }
+        end
+        djui_chat_message_create('z ' .. self.ent.angles[1] .. ', ' .. self.ent.angles[2] .. ', ' .. self.ent.angles[3])
+    end
 
     self.open_pos = self:compute_open_pos()
 
