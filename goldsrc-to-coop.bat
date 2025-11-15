@@ -79,7 +79,7 @@ REM Create lua files
 REM If --output-mod was specified, copy the mod directory to the given path
 IF DEFINED OUTPUT_MOD_PATH (
     ECHO Copying mod to "%OUTPUT_MOD_PATH%"
-    XCOPY "%OUT_DIR%\mod" "%OUTPUT_MOD_PATH%" /E /I /Y
+    XCOPY "%OUT_DIR%\mod" "%OUTPUT_MOD_PATH%" /E /I /Y /Q
 )
 
 PAUSE

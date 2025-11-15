@@ -4,9 +4,8 @@ import sys
 import bmesh
 import mathutils
 
-export_classes_as_objects = [
-    'func_door'
-]
+sys.path.insert(0, os.path.dirname(__file__))
+import goldsrc_parse_entities
 
 def append_blend_objects(blend_path, object_names=None):
     """
@@ -144,7 +143,7 @@ def process_blender_objects(actors_folder, level_name):
             bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 
             # Export object or parent it to level's area
-            if classname in export_classes_as_objects:
+            if classname in goldsrc_parse_entities.parse_classes:
                 export_object(objects_collection, area_obj, actors_folder, level_name, obj, entity_index)
 
 

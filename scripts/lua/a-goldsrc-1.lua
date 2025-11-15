@@ -122,7 +122,7 @@ local function before_mario_update(m)
 
         -- raycast for user
         local ray = collision_find_surface_on_ray(m.pos.x, m.pos.y, m.pos.z, dir_x, dir_y, dir_z)
-        if ray.surface and ray.surface.object and vec3f_dist(ray.hitPos, m.pos) < 300 then
+        if ray.surface and ray.surface.object and vec3f_dist(ray.hitPos, m.pos) < 291 then
             local obj = ray.surface.object
             if gGoldsrc.objToEnt[obj] ~= nil then
                 local ent = gGoldsrc.objToEnt[obj]

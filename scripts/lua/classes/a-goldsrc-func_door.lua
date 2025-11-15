@@ -2,6 +2,11 @@
 -- func_door --
 ---------------
 
+-- TODO: implement
+-- Name (targetname) - Property used to identify entities. Leave empty to make it usable by players; otherwise named doors must be triggered by other entities to operate.
+-- Target (target) - When the door is opened, it triggers the entity with the name specified by Target.
+-- Delay before fire (delay)
+
 local FuncDoor = {}
 FuncDoor.__index = FuncDoor
 

@@ -83,7 +83,6 @@ def main():
 
     # Generate lua files
     for lua_file in lua_files:
-        print('Reading lua file ' + os.path.join(script_dir, "lua", lua_file))
         # Read
         with open(os.path.join(script_dir, "lua", lua_file), 'r', encoding='utf-8') as f:
             lua_source = f.read()
@@ -94,7 +93,6 @@ def main():
 
         # Output lua file
         output_lua_filename = os.path.basename(lua_file.replace('template-', ''))
-        print('Writing lua file ' + os.path.join(output_dir, output_lua_filename))
         with open(os.path.join(output_dir, output_lua_filename), 'w', encoding='utf-8') as f:
             f.write(lua_source)
 
