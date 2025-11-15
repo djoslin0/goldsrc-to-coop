@@ -4,7 +4,7 @@ import sys
 import bmesh
 import mathutils
 
-sys.path.insert(0, os.path.dirname(__file__))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import goldsrc_parse_entities
 
 def append_blend_objects(blend_path, object_names=None):

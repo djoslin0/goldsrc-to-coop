@@ -23,7 +23,7 @@ SET "PROMPT_FOR_HL_DIR_PATH=%~dp0\scripts\prompt-for-hl-dir.py"
 SET "BSPGUY_PATH=%~dp0\tools\bspguy\bspguy.exe"
 SET "BSPGUY_INI_PATH=%~dp0\tools\bspguy\bspguy.ini"
 SET "BLENDER_PATH=%~dp0\tools\blender-3.6.23-windows-x64\blender.exe"
-SET "BLEND_EXPORT_PATH=%~dp0\scripts\blend-export.blend"
+SET "BLEND_EXPORT_PATH=%~dp0\scripts\blender\blend-export.blend"
 SET "CREATE_LUA_PATH=%~dp0\scripts\create-lua.py"
 SET "PYTHON_PATH=%~dp0\tools\blender-3.6.23-windows-x64\3.6\python\bin\python.exe"
 SET SCALE=-22
@@ -56,22 +56,22 @@ REM Run the command to convert BSP to OBJ and export the entities
 "%BSPGUY_PATH%" exportent "%BSP_FILE%" -o "%OUT_DIR%\entities.txt"
 
 REM Import all OBJ files into Blender
-"%BLENDER_PATH%" --background --python scripts/import-all-objs.py -- "%OUT_DIR%" "%OUT_DIR%/entities.txt" "%SCALE%"
+"%BLENDER_PATH%" --background --python scripts/blender/import-all-objs.py -- "%OUT_DIR%" "%OUT_DIR%/entities.txt" "%SCALE%"
 
 REM Combine OBJs to UV2
-"%BLENDER_PATH%" --background --python scripts/combine-into-uv2.py -- "%OUT_DIR%/1-imported-objs.blend"
+"%BLENDER_PATH%" --background --python scripts/blender/combine-into-uv2.py -- "%OUT_DIR%/1-imported-objs.blend"
 
 REM Convert materials to blender-visible lightmap
-"%BLENDER_PATH%" --background --python scripts/blender-lightmap.py -- "%OUT_DIR%/2-combine-uv2.blend"
+"%BLENDER_PATH%" --background --python scripts/blender/blender-lightmap.py -- "%OUT_DIR%/2-combine-uv2.blend"
 
 REM Convert materials to coop lightmap
-"%BLENDER_PATH%" --background --python scripts/coop-lightmap.py -- "%OUT_DIR%/2-combine-uv2.blend"
+"%BLENDER_PATH%" --background --python scripts/blender/coop-lightmap.py -- "%OUT_DIR%/2-combine-uv2.blend"
 
 REM Set fast64 stuff
-"%BLENDER_PATH%" --background --python scripts/set-fast64-stuff.py -- "%OUT_DIR%/4-coop-lightmap.blend"
+"%BLENDER_PATH%" --background --python scripts/blender/set-fast64-stuff.py -- "%OUT_DIR%/4-coop-lightmap.blend"
 
 REM Export level
-"%BLENDER_PATH%" --background --python scripts/export-level.py -- "%OUT_DIR%/5-set-fast64.blend" "%BSP_NAME%" "%BLEND_EXPORT_PATH%"
+"%BLENDER_PATH%" --background --python scripts/blender/export-level.py -- "%OUT_DIR%/5-set-fast64.blend" "%BSP_NAME%" "%BLEND_EXPORT_PATH%"
 
 REM Create lua files
 "%PYTHON_PATH%" "%CREATE_LUA_PATH%" "%BSP_NAME%" "%OUT_DIR%/entities.txt" "%SCALE%"
