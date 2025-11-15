@@ -3,6 +3,7 @@ import os
 import sys
 import bmesh
 import mathutils
+from mathutils import Vector
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import goldsrc_parse_entities
@@ -33,18 +34,45 @@ def append_blend_objects(blend_path, object_names=None):
 
 
 def export_object(objects_collection, area_obj, actors_folder, level_name, blender_object, entity_index):
-    # Change parent / collection
+    # --- Step 1: Find empty entity ---
+    classname = blender_object.name.rsplit('#', 1)[-1]
+    entity_name = f'{entity_index}#{classname}'
+    entity = bpy.data.objects.get(entity_name)
+
+    if entity is None:
+        print(f"Warning: No entity found for index {entity_index} with classname {classname}")
+        return
+
+    # --- Step 2: Move empty to object center if at origin ---
+    if entity.location == Vector((0.0, 0.0, 0.0)):
+        # Calculate object's center of volume (average of all vertices)
+        if blender_object.type == 'MESH':
+            verts_world = [blender_object.matrix_world @ v.co for v in blender_object.data.vertices]
+            center = sum(verts_world, Vector()) / len(verts_world)
+            entity.location = center
+        else:
+            print(f"Warning: {blender_object.name} is not a mesh. Empty left at origin.")
+
+    # --- Step 3: Set object origin to empty location ---
+    bpy.context.view_layer.objects.active = blender_object
+    bpy.ops.object.select_all(action='DESELECT')
+    blender_object.select_set(True)
+    bpy.ops.object.origin_set(type='ORIGIN_CURSOR', center='MEDIAN')
+    
+    # Move 3D cursor to entity location for origin_set
+    bpy.context.scene.cursor.location = entity.location
+    bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
+
+    # --- Step 4: Export object visuals ---
     for col in blender_object.users_collection:
         col.objects.unlink(blender_object)
     blender_object.parent = None
     objects_collection.objects.link(blender_object)
 
-    # Select blender object in object mode
     bpy.ops.object.select_all(action='DESELECT')
     blender_object.select_set(True)
     bpy.context.view_layer.objects.active = blender_object
 
-    # Export visuals
     bpy.data.scenes["Scene"].geoTexDir = f'actors/{level_name}_ent_{entity_index}'
     bpy.data.scenes["Scene"].geoCustomExport = True
     bpy.data.scenes["Scene"].geoExportPath = actors_folder
@@ -52,44 +80,26 @@ def export_object(objects_collection, area_obj, actors_folder, level_name, blend
     bpy.data.scenes["Scene"].geoStructName = f'{level_name}_ent_{entity_index}_geo'
     bpy.ops.object.sm64_export_geolayout_object()
 
-    # Export collision
+    # --- Step 5: Export collision ---
     bpy.data.scenes["Scene"].colCustomExport = True
     bpy.data.scenes["Scene"].colExportPath = actors_folder
     bpy.data.scenes["Scene"].colName = f'{level_name}_ent_{entity_index}'
     bpy.ops.object.sm64_export_collision()
 
-    # Find empty entity
-    classname = blender_object.name.rsplit('#', 1)[-1]
-    entity = None
-    for obj in bpy.data.objects:
-        if obj.type == 'EMPTY' and obj.name == f'{entity_index}#{classname}':
-            entity = obj
-            break
-    
-    if entity is None:
-        print(f"Warning: No entity found for index {entity_index} with classname {classname}")
-        return
-
-    # Set empty's values
+    # --- Step 6: Set empty properties ---
     entity.sm64_obj_type = 'Object'
     entity.sm64_obj_model = 'E_MODEL_NONE'
     entity.sm64_obj_behaviour = 'id_bhvGoldsrcBrush'
     entity.fast64.sm64.game_object.use_individual_params = False
     entity.fast64.sm64.game_object.bparams = hex(entity_index)
-    
-    # Change empty's parent / collection
+
+    # --- Step 7: Parent empty to area ---
     for col in entity.users_collection:
         col.objects.unlink(entity)
     entity.parent = area_obj
-    #entity.matrix_parent_inverse = area_obj.matrix_world.inverted()
 
-    # Ensure object is in the area collection
-    parent_collection = area_obj.users_collection[0] if area_obj.users_collection else None
-    if parent_collection is None:
-        print(f"'Area' is not in any collection. Using scene master collection.")
-        parent_collection = bpy.context.scene.collection
-
-    if obj.name not in parent_collection.objects:
+    parent_collection = area_obj.users_collection[0] if area_obj.users_collection else bpy.context.scene.collection
+    if entity.name not in parent_collection.objects:
         parent_collection.objects.link(entity)
 
 

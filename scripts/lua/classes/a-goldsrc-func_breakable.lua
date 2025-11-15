@@ -47,7 +47,7 @@ end
 
 function FuncBreakable:spawn_gibs()
     -- TODO: spawn pieces based on material type
-    spawn_triangle_break_particles(30, 138, 3.0, 4)
+    goldsrc_spawn_triangle_break_particles(self.obj, 30, E_MODEL_DIRT_ANIMATION, 3.0, 4)
 end
 
 function FuncBreakable:play_break_sound()
