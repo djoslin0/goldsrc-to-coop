@@ -21,7 +21,7 @@ end
 local sAttackCache = {}
 local sObjToEnt = {}
 local sCachedLevelNum = -1
-local sTriggerQueue = {}
+local sEventQueue = {}
 local sGoldsrcTime = 0
 
 ---------------
@@ -33,7 +33,13 @@ function goldsrc_after_level_defined(level_dict)
     level_dict.targetnameToEnt = {}
     for _, ent in ipairs(level_dict.entities) do
         if ent.targetname ~= nil then
-            level_dict.targetnameToEnt[ent.targetname] = ent
+            should_link = true
+            if ent._class and ent._class.should_link then
+                should_link = ent._class:should_link()
+            end
+            if should_link then
+                level_dict.targetnameToEnt[ent.targetname] = ent
+            end
         end
     end
 end
@@ -62,6 +68,14 @@ function goldsrc_get_ent_from_target_name(target_name)
     return level_dict.targetnameToEnt[target_name]
 end
 
+function goldsrc_queue_event(delay, fn)
+    if delay <= 0 then
+        fn()
+    else
+        sEventQueue[#sEventQueue+1] = { sGoldsrcTime + delay, fn }
+    end
+end
+
 function goldsrc_fire_target(target_name, activator, caller, use_type, value, delay)
     -- get and validate target
     local target = goldsrc_get_ent_from_target_name(target_name)
@@ -70,11 +84,31 @@ function goldsrc_fire_target(target_name, activator, caller, use_type, value, de
     if target._class.trigger == nil then return end
 
     -- trigger or queue
-    if delay <= 0 then
+    goldsrc_queue_event(delay, function()
         target._class:trigger(target_name, activator, caller, use_type, value)
-    else
-        sTriggerQueue[#sTriggerQueue+1] = { sGoldsrcTime + delay, target_name, activator, caller, use_type, value }
-    end
+    end)
+end
+
+function goldsrc_kill_target(target_name, delay)
+    -- get and validate target
+    local target = goldsrc_get_ent_from_target_name(target_name)
+    if target == nil then return end
+    if target._class == nil then return end
+
+    -- trigger or queue
+    goldsrc_queue_event(delay, function()
+        -- delete obj
+        if target._class.obj ~= nil then
+            obj_mark_for_deletion(target._class.obj)
+        end
+
+        -- delete class
+        target._class = nil
+    end)
+end
+
+function goldsrc_message(message)
+    djui_chat_message_create(message)
 end
 
 function goldsrc_intersects_aabb(pos, radius, ent)
@@ -289,11 +323,11 @@ local function update()
 
     -- trigger queues and remove from them
     local i = 1
-    while i <= #sTriggerQueue do
-        local t = sTriggerQueue[i]
+    while i <= #sEventQueue do
+        local t = sEventQueue[i]
         if t[1] <= sGoldsrcTime then
-            goldsrc_fire_target(t[2], t[3], t[4], t[5], t[6], 0)
-            table.remove(sTriggerQueue, i)
+            t[2]()
+            table.remove(sEventQueue, i)
         else
             i = i + 1
         end

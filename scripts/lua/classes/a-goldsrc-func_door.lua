@@ -3,14 +3,9 @@
 ---------------
 
 -- TODO: implement
--- Name (targetname) - Property used to identify entities. Leave empty to make it usable by players; otherwise named doors must be triggered by other entities to operate.
--- Master (master) <targetname> Name of a master entity. If the master hasn't been activated, this entity will not activate. A door with a master will be locked until the master condition is fulfilled.
--- Target (target) - When the door is opened, it triggers the entity with the name specified by Target.
--- Delay before fire (delay) ???
--- KillTarget (killtarget) - When the door is triggered, it will remove the entity specified by this property from the game.
--- Fire on Close (netname) ???
+-- Master (master) <targetname> Name of a master entity. If the master hasn't been activated, this entity will not activate. A door with a master will be locked until the master condition is fulfilled. The name of a multisource (or game_team_master) entity. A master must usually be active in order for the entity to work. Thus they act almost like an on/off switch, in their simplest form, and like an AND gate in the case of the multisource.
 -- Damage inflicted when blocked (dmg) - How much damage the player receives if he gets stuck between the door and something solid.
--- Message if triggered (message)
+-- Players blocking a door should cause it to go back
 
 local FuncDoor = {}
 FuncDoor.__index = FuncDoor
@@ -73,6 +68,11 @@ function FuncDoor:new(ent, obj)
     end
 
     return self
+end
+
+function FuncDoor:is_locked()
+    -- TODO: figure out 'master' logic to decide when a door is locked or not
+    return false
 end
 
 function FuncDoor:is_passable()
@@ -171,6 +171,18 @@ end
 function FuncDoor:trigger()
     local f = FuncDoor.Flags
     local flags = self.ent.spawnflags or 0
+    local ent = self.ent
+
+    if self:is_locked() then
+        if ent.message then
+            goldsrc_message(ent.message)
+        end
+        return
+    end
+
+    if ent.killtarget then
+        goldsrc_kill_target(ent.killtarget, ent.delay or 0)
+    end
 
     if has_flag(flags, f.TOGGLE) then
         if self.state == FuncDoor.State.OPEN then
@@ -194,6 +206,9 @@ function FuncDoor:trigger()
 end
 
 function FuncDoor:use()
+    if not self:should_link() then
+        return false
+    end
     local flags = self.ent.spawnflags or 0
     if not has_flag(flags, FuncDoor.Flags.USE_ONLY) then
         return false
@@ -208,14 +223,27 @@ function FuncDoor:update_state_machine()
     -- OPENING
     if self.state == FuncDoor.State.OPENING then
         if self:move() then
+            -- Trigger output
+            local ent = self.ent
+            if ent.target then
+                goldsrc_fire_target(ent.target, ent.targetname, ent.targetname, nil, nil, ent.delay or 0)
+            end
+
             if has_flag(flags, f.TOGGLE) then
                 -- Door has reached open pos; stay open until next trigger
                 self.state = FuncDoor.State.OPEN
                 self.target_pos = self.open_pos
             else
-                -- Non-toggle: start WAITING timer before auto-closing
-                self.state = FuncDoor.State.WAITING
-                self.wait_timer = self.ent.wait or 2
+                -- Non-toggle: check for infinite wait
+                if (self.ent.wait or 2) == -1 then
+                    -- Infinite open
+                    self.state = FuncDoor.State.OPEN
+                    self.target_pos = self.open_pos
+                else
+                    -- Start WAITING timer before auto-closing
+                    self.state = FuncDoor.State.WAITING
+                    self.wait_timer = self.ent.wait or 2
+                end
             end
         end
         return
@@ -234,6 +262,12 @@ function FuncDoor:update_state_machine()
     -- CLOSING
     if self.state == FuncDoor.State.CLOSING then
         if self:move() then
+            -- Trigger fire on close
+            local ent = self.ent
+            if ent.netname then
+                goldsrc_fire_target(ent.netname, ent.targetname, ent.targetname, nil, nil, 0)
+            end
+
             self.state = FuncDoor.State.CLOSED
         end
         return
@@ -243,6 +277,11 @@ function FuncDoor:update_state_machine()
 
     -- Should we USE check?
     if has_flag(self.ent.spawnflags or 0, f.USE_ONLY) then
+        return
+    end
+
+    -- Should we link check?
+    if not self:should_link() then
         return
     end
 
