@@ -14,7 +14,7 @@ if gGoldsrc == nil then
     gGoldsrc = {
         classes = {},
         levels = {},
-        toSm64Scalar = 100/22,
+        toSm64Scalar = 100/25,
     }
 end
 
@@ -320,7 +320,7 @@ local function before_mario_update(m)
 
         -- raycast for user
         local ray = collision_find_surface_on_ray(m.pos.x, m.pos.y, m.pos.z, dir_x, dir_y, dir_z)
-        if ray.surface and ray.surface.object and vec3f_dist(ray.hitPos, m.pos) < 291 then
+        if ray.surface and ray.surface.object and vec3f_dist(ray.hitPos, m.pos) < 80 * gGoldsrc.toSm64Scalar then
             local obj = ray.surface.object
             if sObjToEnt[obj] ~= nil then
                 local ent = sObjToEnt[obj]
