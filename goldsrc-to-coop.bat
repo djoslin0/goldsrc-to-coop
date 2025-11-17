@@ -70,17 +70,20 @@ REM Import all OBJ files into Blender
 REM Combine OBJs to UV2
 "%BLENDER_PATH%" --background --python scripts/blender/combine-into-uv2.py -- "%OUT_DIR%/1-imported-objs.blend"
 
+REM Set fast64 stuff
+"%BLENDER_PATH%" --background --python scripts/blender/fix-up-mesh.py -- "%OUT_DIR%/2-combine-uv2.blend"
+
 REM Convert materials to blender-visible lightmap
-"%BLENDER_PATH%" --background --python scripts/blender/blender-lightmap.py -- "%OUT_DIR%/2-combine-uv2.blend"
+"%BLENDER_PATH%" --background --python scripts/blender/blender-lightmap.py -- "%OUT_DIR%/3-fix-up-mesh.blend"
 
 REM Convert materials to coop lightmap
-"%BLENDER_PATH%" --background --python scripts/blender/coop-lightmap.py -- "%OUT_DIR%/2-combine-uv2.blend"
+"%BLENDER_PATH%" --background --python scripts/blender/coop-lightmap.py -- "%OUT_DIR%/3-fix-up-mesh.blend"
 
 REM Set fast64 stuff
-"%BLENDER_PATH%" --background --python scripts/blender/set-fast64-stuff.py -- "%OUT_DIR%/4-coop-lightmap.blend"
+"%BLENDER_PATH%" --background --python scripts/blender/set-fast64-stuff.py -- "%OUT_DIR%/5-coop-lightmap.blend"
 
 REM Export level
-"%BLENDER_PATH%" --background --python scripts/blender/export-level.py -- "%OUT_DIR%/5-set-fast64.blend" "%BSP_NAME%" "%BLEND_EXPORT_PATH%"
+"%BLENDER_PATH%" --background --python scripts/blender/export-level.py -- "%OUT_DIR%/6-set-fast64.blend" "%BSP_NAME%" "%BLEND_EXPORT_PATH%"
 
 :skip_conversion
 

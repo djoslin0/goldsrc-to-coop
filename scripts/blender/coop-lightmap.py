@@ -75,7 +75,7 @@ def main():
     # Save to new file
     # -----------------------
     folder = os.path.dirname(blend_file_path)
-    save_path = os.path.join(folder, "4-coop-lightmap.blend")
+    save_path = os.path.join(folder, "5-coop-lightmap.blend")
     bpy.ops.wm.save_mainfile(filepath=save_path)
     print(f"Blender file saved: {save_path}")
 

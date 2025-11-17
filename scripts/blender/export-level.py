@@ -336,7 +336,7 @@ def main():
     # -----------------------
     # Save to new file
     # -----------------------
-    save_path = os.path.join(folder, "6-export.blend")
+    save_path = os.path.join(folder, "7-export.blend")
     bpy.ops.wm.save_mainfile(filepath=save_path)
     print(f"Blender file saved: {save_path}")
 
