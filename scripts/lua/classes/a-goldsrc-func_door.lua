@@ -68,7 +68,6 @@ function FuncDoor:new(ent, obj)
         else
             self.ent.angles = { 0, yaw, 0 }
         end
-        djui_chat_message_create('z ' .. self.ent.angles[1] .. ', ' .. self.ent.angles[2] .. ', ' .. self.ent.angles[3])
     end
 
     self.open_pos = self:compute_open_pos()

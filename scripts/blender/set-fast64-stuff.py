@@ -8,7 +8,6 @@ trigger_names = [
     "func_bomb_target",
     "func_hostage_rescue",
     "func_buyzone",
-    "func_ladder",
     "func_areaportal",
     "func_monsterclip",
     "func_clip_vphysics",
@@ -22,7 +21,7 @@ def set_fast64_stuff():
 
         # Check if '#' exists in the name
         if '#' in obj_name:
-            brush_type = obj_name.split('#', 1)[1]
+            brush_type = obj_name.rsplit('#', 1)[1]
 
             # Store brush_type as a custom property (optional)
             obj["brush_type"] = brush_type

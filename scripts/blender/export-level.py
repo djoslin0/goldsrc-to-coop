@@ -83,6 +83,11 @@ def export_object(objects_collection, area_obj, actors_folder, level_name, blend
         bpy.ops.object.sm64_export_geolayout_object()
 
     # --- Step 5: Export collision ---
+
+    bpy.ops.object.select_all(action='DESELECT')
+    blender_object.select_set(True)
+    bpy.context.view_layer.objects.active = blender_object
+
     bpy.data.scenes["Scene"].colCustomExport = True
     bpy.data.scenes["Scene"].colExportPath = actors_folder
     bpy.data.scenes["Scene"].colName = f'{level_name}_ent_{entity_index}'
@@ -139,7 +144,7 @@ def process_blender_objects(actors_folder, level_name):
 
             # Get classname and entity index
             classname = obj.name.rsplit('#', 1)[-1]
-            entity_index = int(obj.name.rsplit('#', 1)[0].rsplit('_', 1)[-1])
+            entity_index = int(obj.name.split('#', 1)[0].rsplit('_', 1)[-1])
 
             # Set parent
             obj.parent = area_obj
@@ -257,7 +262,7 @@ def calculate_aabb_lua():
     for obj in bpy.data.objects:
         if obj.name.startswith("M_"):
             # Parse entity index from the object name
-            entity_index = int(obj.name.rsplit('#', 1)[0].rsplit('_', 1)[-1])
+            entity_index = int(obj.name.split('#', 1)[0].rsplit('_', 1)[-1])
             
             # Calculate world bounding box by transforming each corner
             aabb_world = [obj.matrix_world @ mathutils.Vector(corner) for corner in obj.bound_box]

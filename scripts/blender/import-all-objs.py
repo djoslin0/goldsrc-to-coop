@@ -3,6 +3,34 @@ import os
 import sys
 import re
 import math
+import bmesh
+
+def recalc_normals_for_clipnode_objects():
+    # Loop through all objects in the scene
+    for obj in bpy.data.objects:
+        if "#clipnode#" in obj.name:
+            # Make sure we're dealing with a mesh
+            if obj.type == 'MESH':
+                # Switch to object mode (required for bmesh updates)
+                bpy.context.view_layer.objects.active = obj
+                bpy.ops.object.mode_set(mode='OBJECT')
+
+                # Get mesh data
+                mesh = obj.data
+
+                # Create a BMesh from the mesh
+                bm = bmesh.new()
+                bm.from_mesh(mesh)
+
+                # Recalculate normals outside
+                bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+
+                # Write back to the mesh
+                bm.to_mesh(mesh)
+                mesh.update()
+                bm.free()
+
+                print(f"Recalculated normals for object: {obj.name}")
 
 def parse_entities(filepath):
     """Parse a GoldSrc-style entity lump file into a list of dicts, with simple logging."""
@@ -113,6 +141,8 @@ for filename in os.listdir(folder_path):
         obj_path = os.path.join(folder_path, filename)
         print(f"Importing {obj_path}")
         bpy.ops.import_scene.obj(filepath=obj_path)
+
+recalc_normals_for_clipnode_objects()
 
 # -----------------------
 # Parse and import entities

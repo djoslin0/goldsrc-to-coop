@@ -76,8 +76,6 @@ function TriggerHurt:hurt_target(target)
     if not self.enabled then return end
     if not self:should_damage(target) then return end
 
-    djui_chat_message_create('HURT!')
-
     -- Apply damage
     goldsrc_apply_damage(target, self.dmg, self.ent)
 
