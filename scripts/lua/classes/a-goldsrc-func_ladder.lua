@@ -38,11 +38,13 @@ local function moving_into_wall_dot(m)
 end
 
 local function act_goldsrc_ladder(m)
+    -- handle leaving ladder naturally
     if m.wall == nil or m.wall.object ~= m.usedObj then
         m.forwardVel = 10
         return set_mario_action(m, ACT_FREEFALL, 0)
     end
 
+    -- handle player buttons
     if (m.input & INPUT_Z_PRESSED) ~= 0 then
         m.input = m.input & (~INPUT_Z_PRESSED)
         m.forwardVel = -10
@@ -62,17 +64,26 @@ local function act_goldsrc_ladder(m)
         return set_mario_action(m, ACT_WALL_KICK_AIR, 0)
     end
 
-    set_character_animation(m, CHAR_ANIM_BEING_GRABBED)
+    -- handle animation
+    set_character_animation(m, CHAR_ANIM_CRAWLING)
     local loop = m.marioObj.header.gfx.animInfo.curAnim.loopEnd
-    set_anim_to_frame(m, (m.pos.y/10) % loop)
+    set_anim_to_frame(m, (m.pos.y / 2) % loop)
 
-    local move_speed = m.intendedMag * 0.4
+    -- set visible marioObj for animation
+    normal_yaw = math.atan2(m.wall.normal.z, m.wall.normal.x)
+    m.marioObj.oPosX = m.marioObj.oPosX + sins(m.marioObj.oFaceAngleYaw) * 60
+    m.marioObj.oPosZ = m.marioObj.oPosZ + coss(m.marioObj.oFaceAngleYaw) * 60
+    m.marioObj.oFaceAngleYaw = radians_to_sm64(normal_yaw + math.pi/2)
+    m.marioObj.oFaceAnglePitch = degrees_to_sm64(-90)
+    obj_build_transform_from_pos_and_angle(m.marioObj, 0x06, 0x12)
+    obj_set_throw_matrix_from_transform(m.marioObj)
 
     -- Check if player's intended direction is towards the ladder
     local dot = moving_into_wall_dot(m)
 
+    -- Move player up/down the ladder
+    local move_speed = m.intendedMag * 0.4
     if dot > 0 then
-        -- Move player up the ladder
         m.vel.y = m.vel.y + move_speed
     else
         m.vel.y = m.vel.y - move_speed
@@ -87,13 +98,16 @@ local function act_goldsrc_ladder(m)
     m.vel.x = m.forwardVel * sins(m.faceAngle.y)
     m.vel.z = m.forwardVel * coss(m.faceAngle.y)
 
+    -- perform mmovement
     local old_vel_y = m.vel.y
     step = perform_air_step(m,  0)
     if step == AIR_STEP_LANDED then
         if check_fall_damage_or_get_stuck(m, ACT_HARD_BACKWARD_GROUND_KB) == 0 then
-           set_mario_action(m, ACT_FREEFALL_LAND, 0)
+           return set_mario_action(m, ACT_FREEFALL_LAND, 0)
         end
     end
+
+    -- reset velocities
     m.vel.y = old_vel_y * 0.6
     m.vel.x = 0
     m.vel.z = 0
