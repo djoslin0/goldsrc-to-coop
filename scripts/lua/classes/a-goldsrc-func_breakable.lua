@@ -97,7 +97,7 @@ function FuncBreakable:break_now()
     end
 end
 
-function FuncBreakable:apply_damage(dmg)
+function FuncBreakable:apply_damage(dmg, damager)
     if self.state == FuncBreakable.State.DEAD then
         return
     end

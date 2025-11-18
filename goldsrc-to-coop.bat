@@ -66,7 +66,7 @@ IF NOT %ERRORLEVEL%==0 (
 IF "%LUA_ONLY%"=="1" GOTO :skip_conversion
 
 REM Run the command to convert BSP to OBJ and export the entities
-"%BSPGUY_PATH%" exportobj "%BSP_FILE%" -scale "%SCALE%" -lightmap "1" -o "%OUT_DIR%"
+"%BSPGUY_PATH%" exportobj "%BSP_FILE%" -scale "%SCALE%" -lightmap "1" -withmdl "1" -o "%OUT_DIR%"
 "%BSPGUY_PATH%" exportent "%BSP_FILE%" -o "%OUT_DIR%\entities.txt"
 
 REM Adjust gamma for atlas images

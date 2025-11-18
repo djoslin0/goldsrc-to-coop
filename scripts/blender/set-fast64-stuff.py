@@ -34,7 +34,7 @@ def set_fast64_stuff():
             elif brush_type in trigger_names or brush_type.startswith('trigger_'):
                 obj["ignore_render"] = True
                 obj["ignore_collision"] = True
-                obj.hide_viewport = True
+                #obj.hide_viewport = True
         else:
             # No '#' found
             obj["brush_type"] = None

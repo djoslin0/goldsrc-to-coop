@@ -29,6 +29,16 @@ local sGoldsrcTime = 0
 -- Utilities --
 ---------------
 
+function goldsrc_get_type(ent)
+    if ent.marioObj ~= nil then
+        return 'player'
+    elseif ent.ent ~= nil then
+        return ent.ent.classname
+    end
+
+    return nil
+end
+
 function goldsrc_after_level_defined(level_dict)
     -- remember targetnameToEnt
     level_dict.targetnameToEnt = {}
@@ -80,6 +90,22 @@ function goldsrc_queue_event(delay, fn)
     else
         sEventQueue[#sEventQueue+1] = { sGoldsrcTime + delay, fn }
     end
+end
+
+function goldsrc_apply_damage(target, dmg, damager)
+    -- get and validate target
+    if target == nil then return end
+
+    if target.marioObj ~= nil then
+        target.hurtCounter = target.hurtCounter + dmg
+        return
+    end
+
+
+    if target._class == nil then return end
+    if target._class.apply_damage == nil then return end
+
+    target._class:apply_damage(dmg, damager)
 end
 
 function goldsrc_fire_target(target_name, activator, caller, use_type, value, delay)
@@ -276,15 +302,11 @@ local function bhv_goldsrc_brush_init(obj)
         sObjToEnt[obj] = entity
         if entity._geo ~= nil then
             obj_set_model_extended(obj, entity._geo)
-        else
-            djui_chat_message_create('couldnt find geo ' .. obj.oBehParams)
         end
 
         if entity._col ~= nil then
             obj.oCollisionDistance = 999999999
             obj.collisionData = entity._col
-        else
-            djui_chat_message_create('couldnt find col' .. obj.oBehParams)
         end
 
         if gGoldsrc.classes[entity.classname] ~= nil then

@@ -41,4 +41,8 @@ parse_classes['func_door'] = {
     "zhgt_lightflags": parse_int,
 
     "spawnflags": parse_int,
+
+    # Exporting settings
+    "_export_geo": True,
+    "_export_col": True,
 }

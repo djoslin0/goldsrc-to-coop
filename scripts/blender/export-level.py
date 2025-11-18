@@ -34,7 +34,7 @@ def append_blend_objects(blend_path, object_names=None):
             print(f"Appended object: {obj.name}")
 
 
-def export_object(objects_collection, area_obj, actors_folder, level_name, blender_object, entity_index):
+def export_object(objects_collection, area_obj, actors_folder, level_name, blender_object, entity_index, class_info):
     # --- Step 1: Find empty entity ---
     classname = blender_object.name.rsplit('#', 1)[-1]
     entity_name = f'{entity_index}#{classname}'
@@ -79,13 +79,15 @@ def export_object(objects_collection, area_obj, actors_folder, level_name, blend
     bpy.data.scenes["Scene"].geoExportPath = actors_folder
     bpy.data.scenes["Scene"].geoName = f'{level_name}_ent_{entity_index}'
     bpy.data.scenes["Scene"].geoStructName = f'{level_name}_ent_{entity_index}_geo'
-    bpy.ops.object.sm64_export_geolayout_object()
+    if class_info['_export_geo']:
+        bpy.ops.object.sm64_export_geolayout_object()
 
     # --- Step 5: Export collision ---
     bpy.data.scenes["Scene"].colCustomExport = True
     bpy.data.scenes["Scene"].colExportPath = actors_folder
     bpy.data.scenes["Scene"].colName = f'{level_name}_ent_{entity_index}'
-    bpy.ops.object.sm64_export_collision()
+    if class_info['_export_col']:
+        bpy.ops.object.sm64_export_collision()
 
     # --- Step 6: Set empty properties ---
     entity.sm64_obj_type = 'Object'
@@ -155,7 +157,7 @@ def process_blender_objects(actors_folder, level_name):
 
             # Export object or parent it to level's area
             if classname in goldsrc_parse_entities.parse_classes:
-                export_object(objects_collection, area_obj, actors_folder, level_name, obj, entity_index)
+                export_object(objects_collection, area_obj, actors_folder, level_name, obj, entity_index, goldsrc_parse_entities.parse_classes[classname])
 
 
 def triangulate_and_merge_all(threshold=1e-5):

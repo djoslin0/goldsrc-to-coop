@@ -37,6 +37,8 @@ def interpret_entities(entities, bspguy_scalar, to_sm64_coords):
         classname = ent.get("classname", '?')
         if classname in parse_classes:
             for field in parse_classes[classname]:
+                if field.startswith('_'):
+                    continue
                 parse_classes[classname][field](ent, field, iscalar)
 
 def dump_entities_to_lua(entities):
