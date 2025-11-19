@@ -87,7 +87,7 @@ def import_entities_to_blender(filepath, scalar):
         # TODO: This is a hack.. im not sure where I went wrong lol
         angles_str = ent.get("angles")
         angles = (0, 0, 0)
-        if angles_str and (classname == 'info_player_start' or classname == 'info_player_deathmatch'):
+        if angles_str:
             try:
                 x, y, z = map(float, angles_str.split())
                 angles = (x, z, y + 90)
