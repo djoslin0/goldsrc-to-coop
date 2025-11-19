@@ -35,9 +35,6 @@ SET "CREATE_LUA_PATH=%~dp0\scripts\create-lua.py"
 SET "PYTHON_PATH=%~dp0\tools\blender-3.6.23-windows-x64\3.6\python\bin\python.exe"
 SET "MAGICK_PATH=%~dp0\tools\imagemagick\magick.exe"
 SET SCALE=-25
-SET LIGHTMAP_MIN="0%"
-SET LIGHTMAP_MAX="95%"
-SET LIGHTMAP_LEVEL="1.5"
 
 REM Check that important files exist
 IF NOT EXIST "%PROMPT_FOR_HL_DIR_PATH%" ECHO PROMPT_FOR_HL_DIR_PATH not found & PAUSE & EXIT /B
@@ -65,12 +62,15 @@ IF NOT %ERRORLEVEL%==0 (
 
 IF "%LUA_ONLY%"=="1" GOTO :skip_conversion
 
+REM Delete OUT_DIR
+IF EXIST "%OUT_DIR%" RMDIR /S /Q "%OUT_DIR%
+
 REM Run the command to convert BSP to OBJ and export the entities
-"%BSPGUY_PATH%" exportobj "%BSP_FILE%" -scale "%SCALE%" -lightmap "1" -withmdl "1" -o "%OUT_DIR%"
+"%BSPGUY_PATH%" exportobj "%BSP_FILE%" -scale "%SCALE%" -lightmap "1" -withmdl "0" -o "%OUT_DIR%"
 "%BSPGUY_PATH%" exportent "%BSP_FILE%" -o "%OUT_DIR%\entities.txt"
 
 REM Adjust gamma for atlas images
-FOR %%f IN ("%OUT_DIR%\atlases\*.png") DO "%MAGICK_PATH%" "%%f" -level 0%%,150%%,1.0 "%%f"
+REM FOR %%f IN ("%OUT_DIR%\atlases\*.png") DO "%MAGICK_PATH%" "%%f" -level 0%%,150%%,1.0 "%%f"
 
 REM Import all OBJ files into Blender
 "%BLENDER_PATH%" --background --python scripts/blender/import-all-objs.py -- "%OUT_DIR%" "%OUT_DIR%/entities.txt" "%SCALE%"

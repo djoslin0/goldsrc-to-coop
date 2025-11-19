@@ -2,20 +2,18 @@
 -- func_ladder   --
 -------------------
 
+local GoldsrcEntity = require("goldsrc_entity")
+
 local FuncLadder = {}
 FuncLadder.__index = FuncLadder
+setmetatable(FuncLadder, {__index = GoldsrcEntity})
 
 -------------------------------------------------
 -- Constructor
 -------------------------------------------------
 
 function FuncLadder:new(ent, obj)
-    local self = setmetatable({}, FuncLadder)
-
-    ent._class = self
-    self.ent = ent
-    self.obj = obj
-
+    local self = setmetatable(GoldsrcEntity:new(ent, obj), FuncLadder)
     return self
 end
 
@@ -73,7 +71,7 @@ local function act_goldsrc_ladder(m)
     normal_yaw = math.atan2(m.wall.normal.z, m.wall.normal.x)
     m.marioObj.oPosX = m.marioObj.oPosX + sins(m.marioObj.oFaceAngleYaw) * 60
     m.marioObj.oPosZ = m.marioObj.oPosZ + coss(m.marioObj.oFaceAngleYaw) * 60
-    m.marioObj.oFaceAngleYaw = radians_to_sm64(normal_yaw + math.pi/2)
+    m.marioObj.oFaceAngleYaw = radians_to_sm64(-(normal_yaw + math.pi/2))
     m.marioObj.oFaceAnglePitch = degrees_to_sm64(-90)
     obj_build_transform_from_pos_and_angle(m.marioObj, 0x06, 0x12)
     obj_set_throw_matrix_from_transform(m.marioObj)
@@ -143,6 +141,6 @@ end
 -- Registration
 -------------------------------------------------
 
-goldsrc_add_class("func_ladder", function(ent, obj)
-    return FuncLadder:new(ent, obj)
-end)
+GoldsrcEntity.register("func_ladder", FuncLadder)
+
+return FuncLadder

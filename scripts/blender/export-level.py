@@ -97,7 +97,7 @@ def export_object(objects_collection, area_obj, actors_folder, level_name, blend
     # --- Step 6: Set empty properties ---
     entity.sm64_obj_type = 'Object'
     entity.sm64_obj_model = 'E_MODEL_NONE'
-    entity.sm64_obj_behaviour = 'id_bhvGoldsrcBrush'
+    entity.sm64_obj_behaviour = 'id_bhvGoldsrcEntity'
     entity.fast64.sm64.game_object.use_individual_params = False
     entity.fast64.sm64.game_object.bparams = hex(entity_index)
 
@@ -278,7 +278,7 @@ def calculate_aabb_lua():
             max_y = round(max(v.y for v in aabb_world) * sm64_scalar)
             max_z = round(max(v.z for v in aabb_world) * sm64_scalar)
             
-            output += f'entities[{entity_index+1}]._aabb = {{ min = {{ {min_x}, {min_z}, {-min_y} }}, max = {{ {max_x}, {max_z}, {-max_y} }} }}\n'
+            output += f'entities[{entity_index+1}]._aabb = {{ min = {{ {min_x}, {min_z}, {-max_y} }}, max = {{ {max_x}, {max_z}, {-min_y} }} }}\n'
 
     return output
 

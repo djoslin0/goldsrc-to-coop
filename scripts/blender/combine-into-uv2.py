@@ -21,7 +21,7 @@ def assign_lightmap_texture(orig_mat, dup_mat):
     if not orig_mat.use_nodes or not dup_mat.use_nodes:
         return
 
-    orig_mat["lightmap_texture"] = dup_mat.name
+    orig_mat["lightmap_texture"] = dup_mat.name + '.png'
 
 def assign_materials_per_face(original, duplicate):
     """

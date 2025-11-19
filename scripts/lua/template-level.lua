@@ -1,3 +1,5 @@
+local goldsrc = require('goldsrc/goldsrc')
+$CLASS_REQUIRES
 
 --------------------
 -- Register level --
@@ -9,13 +11,13 @@ LEVEL_$LEVELUNAME = level_register("level_$LEVELNAME_entry", COURSE_BOB, "$LEVEL
 -- Level Entities --
 --------------------
 
-gGoldsrc.levels[LEVEL_$LEVELUNAME] = {
+goldsrc.levels[LEVEL_$LEVELUNAME] = {
     entities = {
 $ENTITIES
     }
 }
 
-local entities = gGoldsrc.levels[LEVEL_$LEVELUNAME].entities
+local entities = goldsrc.levels[LEVEL_$LEVELUNAME].entities
 
 ----------------------
 -- Register objects --
@@ -31,4 +33,4 @@ $AABBS
 
 ------------------------
 
-goldsrc_after_level_defined(gGoldsrc.levels[LEVEL_$LEVELUNAME])
+goldsrc_after_level_defined(goldsrc.levels[LEVEL_$LEVELUNAME])

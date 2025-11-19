@@ -1,16 +1,20 @@
 import os
 import sys
 import re
+import shutil
 from goldsrc_parse_ents import convert_entities_to_lua
 
 # Load the template from template-main.lua
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
-lua_files = [
-    'a-goldsrc-1.lua',
-    'template-main.lua',
-    'template-a-goldsrc-level.lua',
+template_files = [
+    [ 'template-main.lua', 'main.lua'],
+    [ 'template-level.lua', 'a-goldsrc-$LEVELNAME.lua'],
 ]
+
+subclasses = {
+    'trigger_once': [ 'trigger_multiple' ]
+}
 
 def collect_register_objects(output_dir):
     actors_dir = os.path.join(output_dir, "actors")
@@ -64,6 +68,36 @@ def main():
     # Parse entities
     entities, entities_lua = convert_entities_to_lua(entities_path, bspguy_scale)
 
+    # Copy goldsrc dir
+    shutil.copytree(os.path.join(script_dir, "lua", "goldsrc"), os.path.join(output_dir, "goldsrc"), dirs_exist_ok=True)
+
+    # Figure out used classnames
+    class_exports = []
+    for entity in entities:
+        if entity['classname'] in class_exports:
+            continue
+        class_exports.append(entity['classname'])
+
+    # Figure out dependencies
+    for classname in class_exports:
+        if classname not in subclasses:
+            continue
+        for dependency in subclasses[classname]:
+            if dependency in class_exports:
+                continue
+            class_exports.append(dependency)
+
+    # Copy classfiles over
+    class_requires = []
+    for classname in class_exports:
+        lua_filename = f"{classname}.lua"
+        lua_local_path = os.path.join("classes", lua_filename)
+        lua_path_r = os.path.join(script_dir, "lua", lua_local_path)
+        lua_path_w = os.path.join(output_dir, "goldsrc", lua_filename)
+        if os.path.exists(lua_path_r) and lua_local_path:
+            shutil.copy(lua_path_r, lua_path_w)
+            class_requires.append(f"require('goldsrc/{classname}')")
+
     # Set template variables
     template_variables = {
         "$LEVELNAME":        levelname,
@@ -71,28 +105,23 @@ def main():
         "$ENTITIES":         entities_lua,
         "$REGISTER_OBJECTS": collect_register_objects(output_dir),
         "$AABBS":            get_aabbs(os.path.join("output", levelname, "aabb.lua")),
+        "$CLASS_REQUIRES":   '\n'.join(class_requires)
     }
 
-    # Figure out which classes to include
-    for entity in entities:
-        lua_filename = f"a-goldsrc-{entity['classname']}.lua"
-        lua_local_path = os.path.join("classes", lua_filename)
-        lua_path = os.path.join(script_dir, "lua", lua_local_path)
-        if os.path.exists(lua_path) and lua_local_path not in lua_files:
-            lua_files.append(lua_local_path)
-
-    # Generate lua files
-    for lua_file in lua_files:
+    # Generate lua files from templates
+    for lua_file_s in template_files:
+        lua_file_r, lua_file_w = lua_file_s
         # Read
-        with open(os.path.join(script_dir, "lua", lua_file), 'r', encoding='utf-8') as f:
+        with open(os.path.join(script_dir, "lua", lua_file_r), 'r', encoding='utf-8') as f:
             lua_source = f.read()
 
         # Replace template variables
         for k, v in template_variables.items():
             lua_source = lua_source.replace(k, v)
+            lua_file_w = lua_file_w.replace(k, v)
 
         # Output lua file
-        output_lua_filename = os.path.basename(lua_file.replace('template-', ''))
+        output_lua_filename = os.path.basename(lua_file_w)
         with open(os.path.join(output_dir, output_lua_filename), 'w', encoding='utf-8') as f:
             f.write(lua_source)
 

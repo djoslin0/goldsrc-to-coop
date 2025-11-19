@@ -1,4 +1,7 @@
--- Auto-generated list of GoldSrc entities
+--------------
+-- Requires --
+--------------
+require('bhv_goldsrc_entity')
 
 ------------------------
 -- Set coop constants --
@@ -20,7 +23,6 @@ end
 
 -- These variables must be cleared on level init
 local sAttackCache = {}
-local sObjToEnt = {}
 local sCachedLevelNum = -1
 local sEventQueue = {}
 local sGoldsrcTime = 0
@@ -49,7 +51,11 @@ function goldsrc_after_level_defined(level_dict)
                 should_link = ent._class:should_link()
             end
             if should_link then
-                level_dict.targetnameToEnt[ent.targetname] = ent
+                if level_dict.targetnameToEnt[ent.targetname] then
+                    table.insert(level_dict.targetnameToEnt[ent.targetname], ent)
+                else
+                    level_dict.targetnameToEnt[ent.targetname] = { ent }
+                end
             end
         end
     end
@@ -78,9 +84,9 @@ function goldsrc_get_entities()
     return gGoldsrc.levels[levelnum].entities
 end
 
-function goldsrc_get_ent_from_target_name(target_name)
+function goldsrc_get_entities_from_target_name(target_name)
     local level_dict = gGoldsrc.levels[sCachedLevelNum]
-    if not level_dict then return nil end
+    if not level_dict then return {} end
     return level_dict.targetnameToEnt[target_name]
 end
 
@@ -109,34 +115,33 @@ function goldsrc_apply_damage(target, dmg, damager)
 end
 
 function goldsrc_fire_target(target_name, activator, caller, use_type, value, delay)
-    -- get and validate target
-    local target = goldsrc_get_ent_from_target_name(target_name)
-    if target == nil then return end
-    if target._class == nil then return end
-    if target._class.trigger == nil then return end
+    local targets = goldsrc_get_entities_from_target_name(target_name)
+    if not targets then return end
 
-    -- trigger or queue
-    goldsrc_queue_event(delay, function()
-        target._class:trigger(target_name, activator, caller, use_type, value)
-    end)
+    for _, target in ipairs(targets) do
+        if target and target._class and target._class.trigger then
+            goldsrc_queue_event(delay, function()
+                target._class:trigger(target, activator, caller, use_type, value)
+            end)
+        end
+    end
 end
 
 function goldsrc_kill_target(target_name, delay)
-    -- get and validate target
-    local target = goldsrc_get_ent_from_target_name(target_name)
-    if target == nil then return end
-    if target._class == nil then return end
+    local targets = goldsrc_get_entities_from_target_name(target_name)
+    if not targets then return end
 
-    -- trigger or queue
-    goldsrc_queue_event(delay, function()
-        -- delete obj
-        if target._class.obj ~= nil then
-            obj_mark_for_deletion(target._class.obj)
+    for _, target in ipairs(targets) do
+        if target and target._class then
+            goldsrc_queue_event(delay, function()
+                target._class.enabled = false
+                local obj = target._class.obj
+                if obj ~= nil then
+                    obj.header.gfx.node.flags = obj.header.gfx.node.flags | GRAPH_RENDER_INVISIBLE
+                end
+            end)
         end
-
-        -- delete class
-        target._class = nil
-    end)
+    end
 end
 
 function goldsrc_message(message)
@@ -282,48 +287,6 @@ function goldsrc_spawn_triangle_break_particles(obj, numTris, triModel, triSize,
     end
 end
 
-------------------
--- Brush entity --
-------------------
-
-local function bhv_goldsrc_brush_init(obj)
-    obj.oFlags = OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE
-    obj.header.gfx.skipInViewCheck = true
-    obj.oOpacity = 255
-    obj.oFaceAnglePitch = 0
-    obj.oFaceAngleYaw = 0
-    obj.oFaceAngleRoll = 0
-    obj.oMoveAnglePitch = 0
-    obj.oMoveAngleYaw = 0
-    obj.oMoveAngleRoll = 0
-
-    local entity = goldsrc_get_entity(obj.oBehParams)
-    if entity ~= nil then
-        sObjToEnt[obj] = entity
-        if entity._geo ~= nil then
-            obj_set_model_extended(obj, entity._geo)
-        end
-
-        if entity._col ~= nil then
-            obj.oCollisionDistance = 999999999
-            obj.collisionData = entity._col
-        end
-
-        if gGoldsrc.classes[entity.classname] ~= nil then
-            gGoldsrc.classes[entity.classname](entity, obj)
-        end
-    end
-end
-
-local function bhv_goldsrc_brush_loop(obj)
-    local entity = goldsrc_get_entity(obj.oBehParams)
-    if entity ~= nil and entity._class ~= nil then
-        entity._class:update()
-    end
-end
-
-id_bhvGoldsrcBrush = hook_behavior(nil, OBJ_LIST_SURFACE, true, bhv_goldsrc_brush_init, bhv_goldsrc_brush_loop)
-
 -----------
 -- Hooks --
 -----------
@@ -344,8 +307,8 @@ local function before_mario_update(m)
         local ray = collision_find_surface_on_ray(m.pos.x, m.pos.y, m.pos.z, dir_x, dir_y, dir_z)
         if ray.surface and ray.surface.object and vec3f_dist(ray.hitPos, m.pos) < 80 * gGoldsrc.toSm64Scalar then
             local obj = ray.surface.object
-            if sObjToEnt[obj] ~= nil then
-                local ent = sObjToEnt[obj]
+            if gGoldsrcObjToEnt[obj] ~= nil then
+                local ent = gGoldsrcObjToEnt[obj]
                 local class = ent._class
                 if class ~= nil and class.use ~= nil and class:use() then
                     m.controller.buttonPressed = (m.controller.buttonPressed & ~B_BUTTON)
@@ -402,9 +365,13 @@ local function on_level_init()
     end
 
     sAttackCache = {}
-    sObjToEnt = {}
+    gGoldsrcObjToEnt = {}
     sCachedLevelNum = gNetworkPlayers[0].currLevelNum
     sGoldsrcTime = 0
 end
 
 hook_event(HOOK_ON_LEVEL_INIT, on_level_init)
+
+-------------
+
+return gGoldsrc

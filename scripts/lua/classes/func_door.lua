@@ -7,8 +7,11 @@
 -- Damage inflicted when blocked (dmg) - How much damage the player receives if he gets stuck between the door and something solid.
 -- Players blocking a door should cause it to go back
 
+local GoldsrcEntity = require("goldsrc_entity")
+
 local FuncDoor = {}
 FuncDoor.__index = FuncDoor
+setmetatable(FuncDoor, {__index = GoldsrcEntity})
 
 local dt = 1/30
 
@@ -31,20 +34,12 @@ FuncDoor.Flags = {
     NOT_IN_DEATHMATCH = 1 << 11,  -- 2048
 }
 
-local function has_flag(value, flag)
-    return (value & flag) ~= 0
-end
-
 -------------------------------------------------
 -- Constructor
 -------------------------------------------------
 
 function FuncDoor:new(ent, obj)
-    local self = setmetatable({}, FuncDoor)
-
-    ent._class = self
-    self.ent = ent
-    self.obj = obj
+    local self = setmetatable(GoldsrcEntity:new(ent, obj), FuncDoor)
 
     self.closed_pos = {
         x = obj.oPosX,
@@ -77,7 +72,7 @@ function FuncDoor:new(ent, obj)
     self.wait_timer = 0
 
     -- STARTS_OPEN flag
-    if has_flag(ent.spawnflags or 0, FuncDoor.Flags.STARTS_OPEN) then
+    if GoldsrcEntity.has_flag(ent.spawnflags or 0, FuncDoor.Flags.STARTS_OPEN) then
         self.state = FuncDoor.State.OPEN
         self.current_pos = { x = self.open_pos.x, y = self.open_pos.y, z = self.open_pos.z }
         self.target_pos = self.open_pos
@@ -87,16 +82,24 @@ function FuncDoor:new(ent, obj)
 end
 
 function FuncDoor:is_locked()
+    local ent = self.ent
+
     -- TODO: figure out 'master' logic to decide when a door is locked or not
+    
+    -- Should we look for player triggers?
+    if ent.targetname ~= nil and ent.targetname ~= '' then
+        return true
+    end
+
     return false
 end
 
 function FuncDoor:is_passable()
-    return has_flag(self.ent.spawnflags or 0, FuncDoor.Flags.PASSABLE)
+    return GoldsrcEntity.has_flag(self.ent.spawnflags or 0, FuncDoor.Flags.PASSABLE)
 end
 
 function FuncDoor:should_link()
-    return not has_flag(self.ent.spawnflags or 0, FuncDoor.Flags.DONT_LINK)
+    return not GoldsrcEntity.has_flag(self.ent.spawnflags or 0, FuncDoor.Flags.DONT_LINK)
 end
 
 function FuncDoor:compute_open_pos()
@@ -189,18 +192,11 @@ function FuncDoor:trigger()
     local flags = self.ent.spawnflags or 0
     local ent = self.ent
 
-    if self:is_locked() then
-        if ent.message then
-            goldsrc_message(ent.message)
-        end
-        return
-    end
-
     if ent.killtarget then
         goldsrc_kill_target(ent.killtarget, ent.delay or 0)
     end
 
-    if has_flag(flags, f.TOGGLE) then
+    if GoldsrcEntity.has_flag(flags, f.TOGGLE) then
         if self.state == FuncDoor.State.OPEN then
             self.state = FuncDoor.State.CLOSING
             self.target_pos = self.closed_pos
@@ -221,44 +217,60 @@ function FuncDoor:trigger()
     return false
 end
 
+function FuncDoor:trigger_from_player()
+    local ent = self.ent
+
+    if self:is_locked() then
+        if ent.message then
+            goldsrc_message(ent.message)
+        end
+        return false
+    else
+        return self:trigger()
+    end
+end
+
 function FuncDoor:use()
+    local flags = self.ent.spawnflags or 0
+
     if not self:should_link() then
         return false
     end
-    local flags = self.ent.spawnflags or 0
-    if not has_flag(flags, FuncDoor.Flags.USE_ONLY) then
+
+    if not GoldsrcEntity.has_flag(flags, FuncDoor.Flags.USE_ONLY) then
         return false
     end
-    return self:trigger()
+
+    return self:trigger_from_player()
 end
 
 function FuncDoor:update_state_machine()
     local f = FuncDoor.Flags
     local flags = self.ent.spawnflags or 0
+    local ent = self.ent
 
     -- OPENING
     if self.state == FuncDoor.State.OPENING then
         if self:move() then
             -- Trigger output
-            local ent = self.ent
             if ent.target then
                 goldsrc_fire_target(ent.target, ent.targetname, ent.targetname, nil, nil, ent.delay or 0)
             end
 
-            if has_flag(flags, f.TOGGLE) then
+            if GoldsrcEntity.has_flag(flags, f.TOGGLE) then
                 -- Door has reached open pos; stay open until next trigger
                 self.state = FuncDoor.State.OPEN
                 self.target_pos = self.open_pos
             else
                 -- Non-toggle: check for infinite wait
-                if (self.ent.wait or 2) == -1 then
+                if (ent.wait or 2) == -1 then
                     -- Infinite open
                     self.state = FuncDoor.State.OPEN
                     self.target_pos = self.open_pos
                 else
                     -- Start WAITING timer before auto-closing
                     self.state = FuncDoor.State.WAITING
-                    self.wait_timer = self.ent.wait or 2
+                    self.wait_timer = ent.wait or 2
                 end
             end
         end
@@ -279,7 +291,6 @@ function FuncDoor:update_state_machine()
     if self.state == FuncDoor.State.CLOSING then
         if self:move() then
             -- Trigger fire on close
-            local ent = self.ent
             if ent.netname then
                 goldsrc_fire_target(ent.netname, ent.targetname, ent.targetname, nil, nil, 0)
             end
@@ -292,7 +303,7 @@ function FuncDoor:update_state_machine()
     local m = gMarioStates[0]
 
     -- Should we USE check?
-    if has_flag(self.ent.spawnflags or 0, f.USE_ONLY) then
+    if GoldsrcEntity.has_flag(ent.spawnflags or 0, f.USE_ONLY) then
         return
     end
 
@@ -308,7 +319,7 @@ function FuncDoor:update_state_machine()
 
     -- Proximity trigger
     if goldsrc_is_touching_obj(m, self.obj) then
-        self:trigger()
+        self:trigger_from_player()
     end
 end
 
@@ -329,4 +340,6 @@ end
 -- Registration
 -------------------------------------------------
 
-goldsrc_add_class("func_door", function(ent, obj) return FuncDoor:new(ent, obj) end)
+GoldsrcEntity.register("func_door", FuncDoor)
+
+return FuncDoor

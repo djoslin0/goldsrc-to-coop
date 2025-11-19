@@ -2,8 +2,11 @@
 -- trigger_hurt   --
 --------------------
 
+local GoldsrcEntity = require("goldsrc_entity")
+
 local TriggerHurt = {}
 TriggerHurt.__index = TriggerHurt
+setmetatable(TriggerHurt, {__index = GoldsrcEntity})
 
 TriggerHurt.Flags = {
     TARGET_ONCE      = 1 << 0,  -- 1
@@ -13,26 +16,17 @@ TriggerHurt.Flags = {
     TOUCH_CLIENT_ONLY= 1 << 5,  -- 32
 }
 
-local function has_flag(v, f)
-    return (v & f) ~= 0
-end
-
 -------------------------------------------------
 -- Constructor
 -------------------------------------------------
 
 function TriggerHurt:new(ent, obj)
-    local self = setmetatable({}, TriggerHurt)
-
-    ent._class = self
-    self.ent = ent
-    self.obj = obj
+    local self = setmetatable(GoldsrcEntity:new(ent, obj), TriggerHurt)
+    ent.dmg = ent.dmg or 10
 
     local flags = ent.spawnflags or 0
-    self.enabled  = not has_flag(flags, TriggerHurt.Flags.START_OFF)
+    self.enabled = not GoldsrcEntity.has_flag(flags, TriggerHurt.Flags.START_OFF)
     self.fired_once = false
-
-    self.dmg = ent.dmg or 10
     self.damage_timer = 0
 
     return self
@@ -46,11 +40,11 @@ function TriggerHurt:should_damage(target)
     local flags = self.ent.spawnflags or 0
     local is_player = goldsrc_get_type(target) == 'player'
 
-    if has_flag(flags, TriggerHurt.Flags.NO_CLIENTS) and is_player then
+    if GoldsrcEntity.has_flag(flags, TriggerHurt.Flags.NO_CLIENTS) and is_player then
         return false
     end
 
-    if has_flag(flags, TriggerHurt.Flags.TOUCH_CLIENT_ONLY) and not is_player then
+    if GoldsrcEntity.has_flag(flags, TriggerHurt.Flags.TOUCH_CLIENT_ONLY) and not is_player then
         return false
     end
 
@@ -61,11 +55,11 @@ function TriggerHurt:should_fire_target(target)
     local flags = self.ent.spawnflags or 0
     local is_player = goldsrc_get_type(target) == 'player'
 
-    if has_flag(flags, TriggerHurt.Flags.FIRE_CLIENT_ONLY) and not is_player then
+    if GoldsrcEntity.has_flag(flags, TriggerHurt.Flags.FIRE_CLIENT_ONLY) and not is_player then
         return false
     end
 
-    if has_flag(flags, TriggerHurt.Flags.TARGET_ONCE) and self.fired_once then
+    if GoldsrcEntity.has_flag(flags, TriggerHurt.Flags.TARGET_ONCE) and self.fired_once then
         return false
     end
 
@@ -73,11 +67,10 @@ function TriggerHurt:should_fire_target(target)
 end
 
 function TriggerHurt:hurt_target(target)
-    if not self.enabled then return end
     if not self:should_damage(target) then return end
 
     -- Apply damage
-    goldsrc_apply_damage(target, self.dmg, self.ent)
+    goldsrc_apply_damage(target, self.ent.dmg, self.ent)
 
     -- Fire targets if allowed
     if self.ent.target and self:should_fire_target(target) then
@@ -89,7 +82,7 @@ function TriggerHurt:hurt_target(target)
     end
 
     -- Mark as fired if TARGET_ONCE
-    if has_flag(self.ent.spawnflags or 0, TriggerHurt.Flags.TARGET_ONCE) then
+    if GoldsrcEntity.has_flag(self.ent.spawnflags or 0, TriggerHurt.Flags.TARGET_ONCE) then
         self.fired_once = true
     end
 end
@@ -99,7 +92,6 @@ end
 -------------------------------------------------
 
 function TriggerHurt:update()
-    if not self.enabled then return end
     local m = gMarioStates[0]
 
     -- run at 10hz
@@ -114,13 +106,12 @@ function TriggerHurt:update()
     end
 
     -- TODO: Check monsters/entities
-
 end
 
 -------------------------------------------------
 -- Registration
 -------------------------------------------------
 
-goldsrc_add_class("trigger_hurt", function(ent, obj)
-    return TriggerHurt:new(ent, obj)
-end)
+GoldsrcEntity.register("trigger_hurt", TriggerHurt)
+
+return TriggerHurt

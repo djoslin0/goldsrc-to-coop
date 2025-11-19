@@ -7,14 +7,11 @@
 -- fix up explosion
 -- func_breakables can get crushed by other brushes
 
+local GoldsrcEntity = require("goldsrc_entity")
+
 local FuncBreakable = {}
 FuncBreakable.__index = FuncBreakable
-
--- States
-FuncBreakable.State = {
-    ALIVE = 0,
-    DEAD  = 1,
-}
+setmetatable(FuncBreakable, {__index = GoldsrcEntity})
 
 -- Spawnflags
 FuncBreakable.Flags = {
@@ -24,28 +21,14 @@ FuncBreakable.Flags = {
     INSTANT_CROWBAR = 1 << 8,  -- breaks instantly to crowbar
 }
 
-local function has_flag(value, flag)
-    return (value & flag) ~= 0
-end
-
 -------------------------------------------------
 -- Constructor
 -------------------------------------------------
 
 function FuncBreakable:new(ent, obj)
-    local self = setmetatable({}, FuncBreakable)
+    local self = setmetatable(GoldsrcEntity:new(ent, obj), FuncBreakable)
 
-    ent._class = self
-    self.ent = ent
-    self.obj = obj
-
-    self.state = FuncBreakable.State.ALIVE
     self.health = ent.health or 1
-    self.material = ent.material or 0
-    self.delay = ent.delay or 0
-
-    -- Sound stub
-    self.break_sound = ent.material or 0
 
     return self
 end
@@ -66,11 +49,12 @@ function FuncBreakable:play_damaged_sound()
 end
 
 function FuncBreakable:break_now()
-    if self.state == FuncBreakable.State.DEAD then
+    if not self.enabled then
         return
     end
 
-    self.state = FuncBreakable.State.DEAD
+    self.enabled = false
+
     self:play_break_sound()
     self:spawn_gibs()
 
@@ -98,7 +82,7 @@ function FuncBreakable:break_now()
 end
 
 function FuncBreakable:apply_damage(dmg, damager)
-    if self.state == FuncBreakable.State.DEAD then
+    if not self.enabled then
         return
     end
 
@@ -110,7 +94,7 @@ function FuncBreakable:apply_damage(dmg, damager)
     local flags = self.ent.spawnflags or 0
 
     -- ONLY_TRIGGER means damage does nothing
-    if has_flag(flags, FuncBreakable.Flags.ONLY_TRIGGER) then
+    if GoldsrcEntity.has_flag(flags, FuncBreakable.Flags.ONLY_TRIGGER) then
         return
     end
 
@@ -132,12 +116,12 @@ function FuncBreakable:update_touch()
     local m = gMarioStates[0]
 
     -- TOUCH breaks instantly if touched
-    if has_flag(flags, FuncBreakable.Flags.TOUCH) and goldsrc_is_touching_obj(m, self.obj) then
+    if GoldsrcEntity.has_flag(flags, FuncBreakable.Flags.TOUCH) and goldsrc_is_touching_obj(m, self.obj) then
         self:break_now()
     end
 
     -- PRESSURE: Mario stands on top
-    if has_flag(flags, FuncBreakable.Flags.PRESSURE) and goldsrc_is_standing_on_obj(m, self.obj) then
+    if GoldsrcEntity.has_flag(flags, FuncBreakable.Flags.PRESSURE) and goldsrc_is_standing_on_obj(m, self.obj) then
         self:break_now()
     end
 end
@@ -145,23 +129,19 @@ end
 function FuncBreakable:update()
     local flags = self.ent.spawnflags or 0
 
-    if self.state == FuncBreakable.State.DEAD then
-        return
-    end
-
-    if not has_flag(flags, FuncBreakable.Flags.ONLY_TRIGGER) then
+    if not GoldsrcEntity.has_flag(flags, FuncBreakable.Flags.ONLY_TRIGGER) then
         self:update_touch()
     end
 
     if goldsrc_is_attacking_obj(gMarioStates[0], self.obj) then
-        if has_flag(flags, FuncBreakable.Flags.INSTANT_CROWBAR) then
+        if GoldsrcEntity.has_flag(flags, FuncBreakable.Flags.INSTANT_CROWBAR) then
             self:break_now()
         else
             self:apply_damage(34)
         end
     end
 
-    if self.state == FuncBreakable.State.ALIVE then
+    if self.enabled then
         load_object_collision_model()
     end
 end
@@ -173,3 +153,5 @@ end
 goldsrc_add_class("func_breakable", function(ent, obj)
     return FuncBreakable:new(ent, obj)
 end)
+
+return FuncBreakable
