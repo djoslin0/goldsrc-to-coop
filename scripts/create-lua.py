@@ -13,7 +13,8 @@ template_files = [
 ]
 
 subclasses = {
-    'trigger_once': [ 'trigger_multiple' ]
+    'trigger_once': [ 'trigger_multiple' ],
+    'func_door_rotating': [ 'func_door' ],
 }
 
 def collect_register_objects(output_dir):
