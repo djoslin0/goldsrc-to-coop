@@ -70,7 +70,7 @@ REM Run the command to convert BSP to OBJ and export the entities
 "%BSPGUY_PATH%" exportent "%BSP_FILE%" -o "%OUT_DIR%\entities.txt"
 
 REM Adjust gamma for atlas images
-REM FOR %%f IN ("%OUT_DIR%\atlases\*.png") DO "%MAGICK_PATH%" "%%f" -level 0%%,150%%,1.0 "%%f"
+FOR %%f IN ("%OUT_DIR%\atlases\*.png") DO "%MAGICK_PATH%" "%%f" -level 0%%,100%%,1.3 "%%f"
 
 REM Import all OBJ files into Blender
 "%BLENDER_PATH%" --background --python scripts/blender/import-all-objs.py -- "%OUT_DIR%" "%OUT_DIR%/entities.txt" "%SCALE%"

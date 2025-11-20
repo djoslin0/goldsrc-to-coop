@@ -1,6 +1,7 @@
 import bpy
 import os
 import sys
+import re
 
 trigger_names = [
     "func_vehiclecontrols",
@@ -44,6 +45,7 @@ def set_fast64_stuff():
         if not hasattr(obj, "material_slots"):
             continue
 
+        # replace sky textures
         for slot in obj.material_slots:
             mat = slot.material
             if mat and (mat.name == "sky_f3d" or mat.name.startswith("sky_LM")):
@@ -55,13 +57,60 @@ def set_fast64_stuff():
                 override['material'] = mat
                 with bpy.context.temp_override(**override):
                     bpy.ops.material.update_f3d_nodes()
-            elif mat and mat.name[0] == '{':
-                mat.f3d_mat.draw_layer.sm64 = '4'
-                mat.f3d_mat.combiner1.D_alpha = 'TEXEL0'
 
+        # set rendermode
+        try:
+            obj_name = obj.name
+            entity_index = int(re.search(r'ENT_(\d+)#', obj_name).group(1))
+            entity_obj = next((o for o in bpy.data.objects if o.name.startswith(f"{entity_index}#")), None)
+            entity_rendermode = int(entity_obj.get("rendermode"))
+            entity_renderamt = int(entity_obj.get("renderamt"))
+            entity_rendercolor = list(map(int, entity_obj.get("rendercolor").split()))
+        except Exception as ex:
+            continue
+
+        if entity_rendermode == 0:
+            continue
+
+        # duplicate and alter materials for rendermode
+        for i, slot in enumerate(obj.material_slots):
+            if not slot.material:
+                continue
+            new_mat = slot.material.copy()
+            obj.material_slots[i].material = new_mat
+
+            update = False
+
+            if entity_rendermode == 1:
+                # TODO: additive
+                new_mat.f3d_mat.draw_layer.sm64 = '5'
+                new_mat.f3d_mat.combiner1.A = 'PRIMITIVE'
+                new_mat.f3d_mat.combiner1.C = 'TEXEL0'
+                new_mat.f3d_mat.combiner1.D_alpha = 'PRIMITIVE'
+                new_mat.f3d_mat.prim_color = (entity_rendercolor[0]/255, entity_rendercolor[1]/255, entity_rendercolor[2]/255, entity_renderamt/255)
+                update = True
+
+            elif entity_rendermode == 2 or entity_rendermode == 3 or entity_rendermode == 5:
+                # TODO: rendermode 5 is additive
+                new_mat.f3d_mat.draw_layer.sm64 = '5'
+                new_mat.f3d_mat.combiner1.A = '0'
+                new_mat.f3d_mat.combiner1.B = '0'
+                new_mat.f3d_mat.combiner1.C = '0'
+                new_mat.f3d_mat.combiner1.D = 'TEXEL0'
+                new_mat.f3d_mat.combiner1.D_alpha = 'PRIMITIVE'
+                new_mat.f3d_mat.prim_color = (1.0, 1.0, 1.0, entity_renderamt/255)
+                update = True
+
+            elif entity_rendermode == 4:
+                new_mat.f3d_mat.draw_layer.sm64 = '4'
+                new_mat.f3d_mat.combiner1.D_alpha = 'TEXEL0'
+                update = True
+
+            if update:
+                update = False
                 # Update the material's cache using context override
                 override = bpy.context.copy()
-                override['material'] = mat
+                override['material'] = new_mat
                 with bpy.context.temp_override(**override):
                     bpy.ops.material.update_f3d_nodes()
 
