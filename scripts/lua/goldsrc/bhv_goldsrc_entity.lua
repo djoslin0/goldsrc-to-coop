@@ -1,5 +1,7 @@
 gGoldsrcObjToEnt = {}
 
+local GoldsrcGfxUtils = require("goldsrc_gfx_utils")
+
 local function bhv_goldsrc_entity_init(obj)
     obj.oFlags = OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE
     obj.header.gfx.skipInViewCheck = true
@@ -16,6 +18,7 @@ local function bhv_goldsrc_entity_init(obj)
         gGoldsrcObjToEnt[obj] = entity
         if entity._geo ~= nil then
             obj_set_model_extended(obj, entity._geo)
+            GoldsrcGfxUtils.replace_gfx_textures(obj.header.gfx.sharedChild)
         end
 
         if entity._col ~= nil then

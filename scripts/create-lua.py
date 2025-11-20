@@ -49,6 +49,37 @@ def get_aabbs(path):
     with open(path, 'r') as f:
         return f.read()
 
+def process_textures(path, missing_png_path):
+    levels_dir = os.path.join(path, 'levels')
+    actors_dir = os.path.join(path, 'actors')
+    textures_dir = os.path.join(path, 'textures')
+    os.makedirs(textures_dir, exist_ok=True)
+
+    png_files = []
+
+    # Collect PNGs from levels (recursive)
+    if os.path.exists(levels_dir):
+        for root, dirs, files in os.walk(levels_dir):
+            for file in files:
+                if file.lower().endswith('.png'):
+                    png_files.append(os.path.join(root, file))
+
+    # Collect PNGs from actors (recursive)
+    if os.path.exists(actors_dir):
+        for root, dirs, files in os.walk(actors_dir):
+            for file in files:
+                if file.lower().endswith('.png'):
+                    png_files.append(os.path.join(root, file))
+
+    # Process each PNG
+    for png_path in png_files:
+        # Copy to textures directory
+        dest = os.path.join(textures_dir, os.path.basename(png_path))
+        shutil.copy2(png_path, dest)
+
+        # Replace original with copy of missing_png_path
+        shutil.copy2(missing_png_path, png_path)
+
 def main():
     if len(sys.argv) < 4:
         print("Usage: python generate_level_script.py <levelname> <entities.txt filepath> <bspguy_scale>")
@@ -124,6 +155,10 @@ def main():
         output_lua_filename = os.path.basename(lua_file_w)
         with open(os.path.join(output_dir, output_lua_filename), 'w', encoding='utf-8') as f:
             f.write(lua_source)
+
+    # Process textures
+    missing_png_path = os.path.join(script_dir, 'missing_texture.png')
+    process_textures(output_dir, missing_png_path)
 
     print(f"✅ Mod generated at: {output_dir}")
 

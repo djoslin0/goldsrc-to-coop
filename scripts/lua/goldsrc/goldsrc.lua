@@ -1,7 +1,9 @@
 --------------
 -- Requires --
 --------------
+
 require('bhv_goldsrc_entity')
+local GoldsrcGfxUtils = require("goldsrc_gfx_utils")
 
 ------------------------
 -- Set coop constants --
@@ -368,6 +370,10 @@ local function on_level_init()
     gGoldsrcObjToEnt = {}
     sCachedLevelNum = gNetworkPlayers[0].currLevelNum
     sGoldsrcTime = 0
+
+    if gGoldsrc.levels[sCachedLevelNum] ~= nil then
+        GoldsrcGfxUtils.replace_gfx_textures(gMarioStates[0].area.root.node)
+    end
 end
 
 hook_event(HOOK_ON_LEVEL_INIT, on_level_init)
