@@ -8,6 +8,44 @@ def is_in_mdl_collection(obj):
             return True
     return False
 
+def convert_mdl_materials():
+    # Convert materials object-by-object
+    bpy.data.scenes["Scene"].bsdf_conv_all = False
+
+    # Store every mdl_flag per obj, per material slot
+    mdl_flags = {}
+
+    # Deselect all
+    for obj in bpy.data.objects:
+        obj.select_set(False)
+        mdl_flags[obj] = []
+
+    # Store mdl flags
+    for obj in bpy.data.objects:
+        for slot in obj.material_slots:
+            mat = slot.material
+            if not mat or not mat.use_nodes:
+                continue
+            bsdf_node = mat.node_tree.nodes.get('Principled BSDF')
+            if not bsdf_node:
+                continue
+            ior = bsdf_node.inputs['IOR'].default_value
+            mdl_flags[obj].append(int(ior))
+
+    # Convert to fast64 mats and remember mdl flags
+    for obj in bpy.data.objects:
+        if not is_in_mdl_collection(obj):
+            continue
+
+        obj.select_set(True)
+        bpy.ops.object.convert_bsdf()
+        obj.select_set(False)
+
+        for i, slot in enumerate(obj.material_slots):
+            mat = slot.material
+            mat['mdl_flags'] = mdl_flags[obj][i]
+
+
 def main():
     # -----------------------
     # Get .blend file from command-line arguments
@@ -80,19 +118,7 @@ def main():
     # ----------------------
     # convert MDL materials
     # ----------------------
-
-    bpy.data.scenes["Scene"].bsdf_conv_all = False
-
-    for obj in bpy.data.objects:
-        obj.select_set(False)
-
-    for obj in bpy.data.objects:
-        if not is_in_mdl_collection(obj):
-            continue
-        obj.select_set(True)
-        bpy.ops.object.convert_bsdf()
-        obj.select_set(False)
-
+    convert_mdl_materials()
 
     # -----------------------
     # Save to new file

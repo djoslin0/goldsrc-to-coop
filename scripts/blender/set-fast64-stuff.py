@@ -21,11 +21,81 @@ invisible_mat_names = [
     "sky_LM"
 ]
 
+# mdl flags
+STUDIO_NF_FLATSHADE  = 0x0001
+STUDIO_NF_CHROME     = 0x0002
+STUDIO_NF_FULLBRIGHT = 0x0004
+STUDIO_NF_NOMIPS     = 0x0008
+STUDIO_NF_ALPHA      = 0x0010
+STUDIO_NF_ADDITIVE   = 0x0020
+STUDIO_NF_MASKED     = 0x0040
+STUDIO_NF_UV_COORDS  = (1<<31)
+
 def is_invisible_mat(name):
     for i in invisible_mat_names:
         if name.lower().startswith(i):
             return True
     return False
+
+def update_material_cache(mat):
+    # Update the material's cache using context override
+    override = bpy.context.copy()
+    override['material'] = mat
+    with bpy.context.temp_override(**override):
+        bpy.ops.material.update_f3d_nodes()
+
+def set_fast64_material_invisible(mat):
+    mat.f3d_mat.draw_layer.sm64 = '4'
+    mat.f3d_mat.combiner1.D_alpha = '0'
+    update_material_cache(mat)
+
+def set_fast64_material_render_mode_color(mat, color, alpha):
+    # TODO: additive
+    mat.f3d_mat.draw_layer.sm64 = '5'
+    mat.f3d_mat.combiner1.A = 'PRIMITIVE'
+    mat.f3d_mat.combiner1.C = 'TEXEL0'
+    mat.f3d_mat.combiner1.D_alpha = 'PRIMITIVE'
+    mat.f3d_mat.rdp_settings.g_cull_back = False
+    mat.f3d_mat.prim_color = (color[0]/255, color[1]/255, color[2]/255, alpha/255)
+    update_material_cache(mat)
+
+def set_fast64_material_render_mode_texture(mat, alpha):
+    mat.f3d_mat.draw_layer.sm64 = '5'
+    mat.f3d_mat.combiner1.A = '0'
+    mat.f3d_mat.combiner1.B = '0'
+    mat.f3d_mat.combiner1.C = '0'
+    mat.f3d_mat.combiner1.D = 'TEXEL0'
+    mat.f3d_mat.combiner1.D_alpha = 'PRIMITIVE'
+    mat.f3d_mat.prim_color = (1.0, 1.0, 1.0, alpha/255)
+    update_material_cache(mat)
+
+def set_fast64_material_render_mode_glow(mat, alpha):
+    # TODO: additive
+    set_fast64_material_render_mode_texture(mat, alpha)
+    mat.f3d_mat.rdp_settings.g_cull_back = False
+    update_material_cache(mat)
+
+def set_fast64_material_render_mode_solid(mat, cull_back = True):
+    mat.f3d_mat.draw_layer.sm64 = '4'
+    mat.f3d_mat.combiner1.D_alpha = 'TEXEL0'
+    mat.f3d_mat.rdp_settings.g_cull_back = cull_back
+    update_material_cache(mat)
+
+def set_fast64_material_render_mode_additive(mat, alpha):
+    # TODO: additive
+    set_fast64_material_render_mode_texture(mat, alpha)
+    mat.f3d_mat.rdp_settings.g_cull_back = False
+    update_material_cache(mat)
+
+def set_faces_smooth_for_material(obj, mat):
+    if obj.type != 'MESH':
+        return
+    for i, slot in enumerate(obj.material_slots):
+        if slot.material == mat:
+            for polygon in obj.data.polygons:
+                if polygon.material_index == i:
+                    polygon.use_smooth = True
+            break
 
 def set_fast64_stuff():
     bpy.data.scenes["Scene"].f3d_simple = False
@@ -58,18 +128,27 @@ def set_fast64_stuff():
         if not hasattr(obj, "material_slots"):
             continue
 
+        # check for and apply mdl_flags
+        for slot in obj.material_slots:
+            mat = slot.material
+            if not mat or 'mdl_flags' not in mat:
+                continue
+            mdl_flags = mat['mdl_flags']
+            if (mdl_flags & STUDIO_NF_ALPHA) != 0:
+                set_fast64_material_render_mode_texture(mat, 128)
+            elif (mdl_flags & STUDIO_NF_ADDITIVE) != 0:
+                set_fast64_material_render_mode_additive(mat, 128)
+            elif (mdl_flags & STUDIO_NF_MASKED) != 0:
+                set_fast64_material_render_mode_solid(mat, False)
+
+            if (mdl_flags & STUDIO_NF_FLATSHADE) == 0:
+                set_faces_smooth_for_material(obj, mat)
+
         # replace sky/null textures
         for slot in obj.material_slots:
             mat = slot.material
             if mat and is_invisible_mat(mat.name):
-                mat.f3d_mat.draw_layer.sm64 = '4'
-                mat.f3d_mat.combiner1.D_alpha = '0'
-
-                # Update the material's cache using context override
-                override = bpy.context.copy()
-                override['material'] = mat
-                with bpy.context.temp_override(**override):
-                    bpy.ops.material.update_f3d_nodes()
+                set_fast64_material_invisible(mat)
 
         # set rendermode
         try:
@@ -91,46 +170,21 @@ def set_fast64_stuff():
                 continue
             if is_invisible_mat(slot.material.name):
                 continue
+
             new_mat = slot.material.copy()
             obj.material_slots[i].material = new_mat
 
-            update = False
-
             if entity_rendermode == 1:
-                # TODO: additive
-                new_mat.f3d_mat.draw_layer.sm64 = '5'
-                new_mat.f3d_mat.combiner1.A = 'PRIMITIVE'
-                new_mat.f3d_mat.combiner1.C = 'TEXEL0'
-                new_mat.f3d_mat.combiner1.D_alpha = 'PRIMITIVE'
-                new_mat.f3d_mat.rdp_settings.g_cull_back = False
-                new_mat.f3d_mat.prim_color = (entity_rendercolor[0]/255, entity_rendercolor[1]/255, entity_rendercolor[2]/255, entity_renderamt/255)
-                update = True
-
-            elif entity_rendermode == 2 or entity_rendermode == 3 or entity_rendermode == 5:
-                # TODO: rendermode 5 is additive
-                new_mat.f3d_mat.draw_layer.sm64 = '5'
-                new_mat.f3d_mat.combiner1.A = '0'
-                new_mat.f3d_mat.combiner1.B = '0'
-                new_mat.f3d_mat.combiner1.C = '0'
-                new_mat.f3d_mat.combiner1.D = 'TEXEL0'
-                new_mat.f3d_mat.combiner1.D_alpha = 'PRIMITIVE'
-                new_mat.f3d_mat.prim_color = (1.0, 1.0, 1.0, entity_renderamt/255)
-                if entity_rendermode == 5:
-                    new_mat.f3d_mat.rdp_settings.g_cull_back = False
-                update = True
-
+                set_fast64_material_render_mode_color(new_mat, entity_rendercolor, entity_renderamt)
+            elif entity_rendermode == 2:
+                set_fast64_material_render_mode_texture(new_mat, entity_renderamt)
+            elif entity_rendermode == 3:
+                set_fast64_material_render_mode_glow(new_mat, entity_renderamt)
             elif entity_rendermode == 4:
-                new_mat.f3d_mat.draw_layer.sm64 = '4'
-                new_mat.f3d_mat.combiner1.D_alpha = 'TEXEL0'
-                update = True
+                set_fast64_material_render_mode_solid(new_mat)
+            elif entity_rendermode == 5:
+                set_fast64_material_render_mode_additive(new_mat, entity_renderamt)
 
-            if update:
-                update = False
-                # Update the material's cache using context override
-                override = bpy.context.copy()
-                override['material'] = new_mat
-                with bpy.context.temp_override(**override):
-                    bpy.ops.material.update_f3d_nodes()
 
 def main():
     # -----------------------
