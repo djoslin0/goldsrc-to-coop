@@ -2,6 +2,12 @@ import bpy
 import os
 import sys
 
+def is_in_mdl_collection(obj):
+    for coll in obj.users_collection:
+        if coll.name == 'MDL':
+            return True
+    return False
+
 def main():
     # -----------------------
     # Get .blend file from command-line arguments
@@ -34,7 +40,7 @@ def main():
 
     # Select all mesh objects (if your operator requires selection)
     for obj in bpy.data.objects:
-        if obj.type == 'MESH':
+        if obj.type == 'MESH' and not is_in_mdl_collection(obj):
             obj.select_set(True)
 
     # Determine atlas image path (relative to blend file)
@@ -53,13 +59,13 @@ def main():
 
     # Select all mesh objects
     for obj in bpy.data.objects:
-        if obj.type == 'MESH':
+        if obj.type == 'MESH' and not is_in_mdl_collection(obj):
             obj.select_set(True)
 
     # Ensure there is an active mesh object
     active_obj = None
     for obj in bpy.data.objects:
-        if obj.type == 'MESH':
+        if obj.type == 'MESH' and not is_in_mdl_collection(obj):
             active_obj = obj
             break
 
@@ -70,6 +76,23 @@ def main():
 
     # Run your custom operator
     bpy.ops.object.f3d_convert_uvs()
+
+    # ----------------------
+    # convert MDL materials
+    # ----------------------
+
+    bpy.data.scenes["Scene"].bsdf_conv_all = False
+
+    for obj in bpy.data.objects:
+        obj.select_set(False)
+
+    for obj in bpy.data.objects:
+        if not is_in_mdl_collection(obj):
+            continue
+        obj.select_set(True)
+        bpy.ops.object.convert_bsdf()
+        obj.select_set(False)
+
 
     # -----------------------
     # Save to new file

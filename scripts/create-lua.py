@@ -15,6 +15,7 @@ template_files = [
 subclasses = {
     'trigger_once': [ 'trigger_multiple' ],
     'func_door_rotating': [ 'func_door' ],
+    'cycler_sprite': [ 'cycler' ],
 }
 
 def collect_register_objects(output_dir):
@@ -68,6 +69,7 @@ def process_textures(path, missing_png_path):
     # Collect PNGs from actors (recursive)
     if os.path.exists(actors_dir):
         for root, dirs, files in os.walk(actors_dir):
+            dirs[:] = [d for d in dirs if not d.endswith('_mdl')]
             for file in files:
                 if file.lower().endswith('.png'):
                     png_files.append(os.path.join(root, file))

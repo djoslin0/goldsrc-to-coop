@@ -84,7 +84,6 @@ def import_entities_to_blender(filepath, scalar):
             except ValueError:
                 pass
 
-        # TODO: This is a hack.. im not sure where I went wrong lol
         angles_str = ent.get("angles")
         angles = (0, 0, 0)
         if angles_str:
@@ -143,6 +142,32 @@ for filename in os.listdir(folder_path):
         bpy.ops.import_scene.obj(filepath=obj_path)
 
 recalc_normals_for_clipnode_objects()
+
+# -----------------------
+# Import MDL OBJ files
+# -----------------------
+
+# Get or create "MDL" collection
+if "MDL" not in bpy.data.collections:
+    mdl_collection = bpy.data.collections.new("MDL")
+    bpy.context.scene.collection.children.link(mdl_collection)
+else:
+    mdl_collection = bpy.data.collections["MDL"]
+
+# Import MDL OBJ files
+mdl_folder = os.path.join(folder_path, "mdl_models")
+if os.path.isdir(mdl_folder):
+    for filename in os.listdir(mdl_folder):
+        if filename.lower().endswith(".obj"):
+            obj_path = os.path.join(mdl_folder, filename)
+            print(f"Importing MDL {obj_path}")
+            prev_selected = set(bpy.context.selected_objects)
+            bpy.ops.import_scene.obj(filepath=obj_path)
+            imported_objects = [obj for obj in bpy.context.selected_objects if obj not in prev_selected]
+            for obj in imported_objects:
+                if obj.name in bpy.context.scene.collection.objects:
+                    bpy.context.scene.collection.objects.unlink(obj)
+                mdl_collection.objects.link(obj)
 
 # -----------------------
 # Parse and import entities

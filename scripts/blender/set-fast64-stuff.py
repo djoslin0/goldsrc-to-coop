@@ -15,6 +15,18 @@ trigger_names = [
     "env_bubbles",
 ]
 
+invisible_mat_names = [
+    "null_f3d",
+    "sky_f3d",
+    "sky_LM"
+]
+
+def is_invisible_mat(name):
+    for i in invisible_mat_names:
+        if name.lower().startswith(i):
+            return True
+    return False
+
 def set_fast64_stuff():
     bpy.data.scenes["Scene"].f3d_simple = False
 
@@ -49,7 +61,7 @@ def set_fast64_stuff():
         # replace sky/null textures
         for slot in obj.material_slots:
             mat = slot.material
-            if mat and (mat.name.lower() == "null_f3d" or mat.name == "sky_f3d" or mat.name.startswith("sky_LM")):
+            if mat and is_invisible_mat(mat.name):
                 mat.f3d_mat.draw_layer.sm64 = '4'
                 mat.f3d_mat.combiner1.D_alpha = '0'
 
@@ -76,6 +88,8 @@ def set_fast64_stuff():
         # duplicate and alter materials for rendermode
         for i, slot in enumerate(obj.material_slots):
             if not slot.material:
+                continue
+            if is_invisible_mat(slot.material.name):
                 continue
             new_mat = slot.material.copy()
             obj.material_slots[i].material = new_mat

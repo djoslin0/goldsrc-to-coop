@@ -9,6 +9,12 @@ from mathutils import Vector
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import goldsrc_parse_entities
 
+def is_in_mdl_collection(obj):
+    for coll in obj.users_collection:
+        if coll.name == 'MDL':
+            return True
+    return False
+
 def append_blend_objects(blend_path, object_names=None):
     """
     Append objects from another .blend file into the current scene.
@@ -32,6 +38,21 @@ def append_blend_objects(blend_path, object_names=None):
         if obj is not None:
             bpy.context.scene.collection.objects.link(obj)
             print(f"Appended object: {obj.name}")
+
+
+def export_mdl(obj, actors_folder):
+    # Select blender object in object mode
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+
+    bpy.data.scenes["Scene"].geoTexDir = f'actors/{obj.name}'
+    bpy.data.scenes["Scene"].geoCustomExport = True
+    bpy.data.scenes["Scene"].geoExportPath = actors_folder
+    bpy.data.scenes["Scene"].geoName = f'{obj.name}'
+    bpy.data.scenes["Scene"].geoStructName = f'{obj.name}_geo'
+    bpy.ops.object.sm64_export_geolayout_object()
 
 
 def export_object(objects_collection, area_obj, actors_folder, level_name, blender_object, entity_index, class_info):
@@ -137,7 +158,9 @@ def process_blender_objects(actors_folder, level_name):
         parent_collection = bpy.context.scene.collection
 
     for obj in bpy.data.objects:
-        if obj.name.startswith("M_"):
+        if is_in_mdl_collection(obj):
+            export_mdl(obj, actors_folder)
+        elif obj.name.startswith("M_"):
             # Remove from all collections
             for col in obj.users_collection:
                 col.objects.unlink(obj)
@@ -148,7 +171,6 @@ def process_blender_objects(actors_folder, level_name):
 
             # Set parent
             obj.parent = area_obj
-            #obj.matrix_parent_inverse = area_obj.matrix_world.inverted()
 
             # Ensure object is in the parent collection
             if obj.name not in parent_collection.objects:
@@ -164,6 +186,36 @@ def process_blender_objects(actors_folder, level_name):
             if classname in goldsrc_parse_entities.parse_classes:
                 export_object(objects_collection, area_obj, actors_folder, level_name, obj, entity_index, goldsrc_parse_entities.parse_classes[classname])
 
+    # deal with point entity export
+    collection = bpy.data.collections.get("Entities")
+    if collection:
+        for obj in collection.objects:
+            if '#' not in obj.name:
+                continue
+
+            # Get classname and entity index
+            classname = obj.name.rsplit('#', 1)[-1]
+            entity_index = int(obj.name.rsplit('#', 1)[0])
+            if classname not in goldsrc_parse_entities.parse_classes:
+                continue
+
+            # Remove from all collections
+            for col in obj.users_collection:
+                col.objects.unlink(obj)
+
+            # Set parent
+            obj.parent = area_obj
+
+            # Ensure object is in the parent collection
+            if obj.name not in parent_collection.objects:
+                parent_collection.objects.link(obj)
+
+            # Set empty properties
+            obj.sm64_obj_type = 'Object'
+            obj.sm64_obj_model = 'E_MODEL_NONE'
+            obj.sm64_obj_behaviour = 'id_bhvGoldsrcEntity'
+            obj.fast64.sm64.game_object.use_individual_params = False
+            obj.fast64.sm64.game_object.bparams = hex(entity_index)
 
 def triangulate_and_merge_all(threshold=1e-5):
     processed = 0
