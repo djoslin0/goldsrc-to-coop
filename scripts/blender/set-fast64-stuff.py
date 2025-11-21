@@ -12,6 +12,7 @@ trigger_names = [
     "func_areaportal",
     "func_monsterclip",
     "func_clip_vphysics",
+    "env_bubbles",
 ]
 
 def set_fast64_stuff():
