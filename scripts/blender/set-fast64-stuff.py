@@ -45,10 +45,10 @@ def set_fast64_stuff():
         if not hasattr(obj, "material_slots"):
             continue
 
-        # replace sky textures
+        # replace sky/null textures
         for slot in obj.material_slots:
             mat = slot.material
-            if mat and (mat.name == "sky_f3d" or mat.name.startswith("sky_LM")):
+            if mat and (mat.name.lower() == "null_f3d" or mat.name == "sky_f3d" or mat.name.startswith("sky_LM")):
                 mat.f3d_mat.draw_layer.sm64 = '4'
                 mat.f3d_mat.combiner1.D_alpha = '0'
 
@@ -87,6 +87,7 @@ def set_fast64_stuff():
                 new_mat.f3d_mat.combiner1.A = 'PRIMITIVE'
                 new_mat.f3d_mat.combiner1.C = 'TEXEL0'
                 new_mat.f3d_mat.combiner1.D_alpha = 'PRIMITIVE'
+                new_mat.f3d_mat.rdp_settings.g_cull_back = False
                 new_mat.f3d_mat.prim_color = (entity_rendercolor[0]/255, entity_rendercolor[1]/255, entity_rendercolor[2]/255, entity_renderamt/255)
                 update = True
 
@@ -99,6 +100,8 @@ def set_fast64_stuff():
                 new_mat.f3d_mat.combiner1.D = 'TEXEL0'
                 new_mat.f3d_mat.combiner1.D_alpha = 'PRIMITIVE'
                 new_mat.f3d_mat.prim_color = (1.0, 1.0, 1.0, entity_renderamt/255)
+                if entity_rendermode == 5:
+                    new_mat.f3d_mat.rdp_settings.g_cull_back = False
                 update = True
 
             elif entity_rendermode == 4:

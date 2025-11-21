@@ -42,12 +42,14 @@ def interpret_entities(entities, bspguy_scalar, to_sm64_coords):
                 parse_classes[classname][field](ent, field, iscalar)
 
 def dump_entities_to_lua(entities):
-    """Convert the entities list to a valid Lua code string."""
     lines = []
     for ent in entities:
         lines.append("        {")
         for k, v in ent.items():
-            lua_key = k.replace('#', '_')
+            # Always produce safe Lua key syntax
+            lua_key = f'["{k}"]'
+
+            # Format value
             if isinstance(v, str):
                 lua_value = f'"{v}"'
                 lua_value = lua_value.replace('\\', '/')
@@ -56,7 +58,8 @@ def dump_entities_to_lua(entities):
             elif isinstance(v, tuple):
                 lua_value = "{" + ", ".join(str(x) for x in v) + "}"
             else:
-                lua_value = str(v)  # fallback
+                lua_value = str(v)
+
             lines.append(f"            {lua_key} = {lua_value},")
         lines.append("        },")
     return "\n".join(lines)
