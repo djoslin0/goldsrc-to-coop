@@ -8,6 +8,7 @@ import combine_into_uv2
 import coop_lightmap
 import set_fast64_stuff
 import export_level
+import convert_mdls
 
 def main():
     # Parse command-line arguments
@@ -41,6 +42,8 @@ def main():
     coop_lightmap.stage_coop_lightmap(3, folder_path)
     set_fast64_stuff.stage_set_fast64_stuff(4, folder_path)
     export_level.stage_export_level(5, folder_path, level_name, append_file_path)
+
+    convert_mdls.stage_convert_mdls(folder_path)
 
 if __name__ == "__main__":
     main()

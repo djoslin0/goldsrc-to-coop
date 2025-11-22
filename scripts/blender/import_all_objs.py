@@ -10,6 +10,10 @@ def delete_default_objects():
     bpy.ops.object.select_all(action='SELECT')
     bpy.ops.object.delete(use_global=False)
 
+    for area in bpy.data.screens["Layout"].areas:
+        if area.type == 'VIEW_3D':
+            area.spaces.active.shading.type = 'MATERIAL'
+
 
 def recalc_normals_for_clipnode_objects():
     # Loop through all objects in the scene
@@ -49,48 +53,6 @@ def import_level_objs(folder_path):
         bpy.ops.import_scene.obj(filepath=obj_path)
 
     recalc_normals_for_clipnode_objects()
-
-
-def import_mdl_objs(folder_path):
-    mdl_folder = os.path.join(folder_path, "mdl_models")
-    if not os.path.isdir(mdl_folder):
-        return
-
-    # Get or create "MDL" collection
-    if "MDL" not in bpy.data.collections:
-        mdl_collection = bpy.data.collections.new("MDL")
-        bpy.context.scene.collection.children.link(mdl_collection)
-    else:
-        mdl_collection = bpy.data.collections["MDL"]
-
-    # Iterate through files in the mdl_models subfolder
-    for filename in os.listdir(mdl_folder):
-        # Skip files that are not .obj files
-        if not filename.lower().endswith(".obj"):
-            continue
-
-        # Construct full path to the .obj file
-        obj_path = os.path.join(mdl_folder, filename)
-
-        # Print import status
-        print(f"Importing MDL {obj_path}")
-
-        # Capture selected objects before import to identify newly imported ones
-        prev_selected = set(bpy.context.selected_objects)
-
-        # Import the OBJ file using Blender's operator
-        bpy.ops.import_scene.obj(filepath=obj_path)
-
-        # Determine which objects were imported by checking selection difference
-        imported_objects = [obj for obj in bpy.context.selected_objects if obj not in prev_selected]
-
-        # Move imported objects to the MDL collection
-        for obj in imported_objects:
-            # Unlink from scene collection if linked
-            if obj.name in bpy.context.scene.collection.objects:
-                bpy.context.scene.collection.objects.unlink(obj)
-            # Link to the MDL collection
-            mdl_collection.objects.link(obj)
 
 
 def parse_entities(filepath):
@@ -170,7 +132,6 @@ def import_entities(filepath, scalar):
 def stage_import_all_objs(num, folder_path, scalar):
     delete_default_objects()
     import_level_objs(folder_path)
-    import_mdl_objs(folder_path)
     import_entities(folder_path + "/entities.txt", scalar)
     bpy.ops.wm.save_mainfile(filepath=os.path.join(folder_path, f"{num}-imported-objs.blend"))
 

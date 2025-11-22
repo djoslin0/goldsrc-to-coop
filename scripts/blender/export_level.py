@@ -10,13 +10,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import goldsrc_parse_entities
 
 
-def is_in_mdl_collection(obj):
-    for coll in obj.users_collection:
-        if coll.name == 'MDL':
-            return True
-    return False
-
-
 def append_blend_objects(blend_path, object_names=None):
     """
     Append objects from another .blend file into the current scene.
@@ -40,21 +33,6 @@ def append_blend_objects(blend_path, object_names=None):
         if obj is not None:
             bpy.context.scene.collection.objects.link(obj)
             print(f"Appended object: {obj.name}")
-
-
-def export_mdl(obj, actors_folder):
-    # Select blender object in object mode
-    bpy.ops.object.select_all(action='DESELECT')
-    obj.select_set(True)
-    bpy.context.view_layer.objects.active = obj
-    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-
-    bpy.data.scenes["Scene"].geoTexDir = f'actors/{obj.name}'
-    bpy.data.scenes["Scene"].geoCustomExport = True
-    bpy.data.scenes["Scene"].geoExportPath = actors_folder
-    bpy.data.scenes["Scene"].geoName = f'{obj.name}'
-    bpy.data.scenes["Scene"].geoStructName = f'{obj.name}_geo'
-    bpy.ops.object.sm64_export_geolayout_object()
 
 
 def export_object(objects_collection, area_obj, actors_folder, level_name, blender_object, entity_index, class_info):
@@ -160,9 +138,7 @@ def process_blender_objects(actors_folder, level_name):
         parent_collection = bpy.context.scene.collection
 
     for obj in bpy.data.objects:
-        if is_in_mdl_collection(obj):
-            export_mdl(obj, actors_folder)
-        elif obj.name.startswith("M_"):
+        if obj.name.startswith("M_"):
             # Remove from all collections
             for col in obj.users_collection:
                 col.objects.unlink(obj)

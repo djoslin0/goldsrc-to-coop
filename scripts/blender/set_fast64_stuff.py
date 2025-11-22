@@ -23,17 +23,6 @@ invisible_mat_names = [
 ]
 
 
-# mdl flags
-STUDIO_NF_FLATSHADE  = 0x0001
-STUDIO_NF_CHROME     = 0x0002
-STUDIO_NF_FULLBRIGHT = 0x0004
-STUDIO_NF_NOMIPS     = 0x0008
-STUDIO_NF_ALPHA      = 0x0010
-STUDIO_NF_ADDITIVE   = 0x0020
-STUDIO_NF_MASKED     = 0x0040
-STUDIO_NF_UV_COORDS  = (1<<31)
-
-
 def is_invisible_mat(name):
     for i in invisible_mat_names:
         if name.lower().startswith(i):
@@ -133,29 +122,6 @@ def apply_brush_types_to_objects():
             obj["brush_type"] = None
 
 
-def apply_material_flags_to_objects():
-    for obj in bpy.data.objects:
-        # Only check objects that have material slots
-        if not hasattr(obj, "material_slots"):
-            continue
-
-        # check for and apply mdl_flags
-        for slot in obj.material_slots:
-            mat = slot.material
-            if not mat or 'mdl_flags' not in mat:
-                continue
-            mdl_flags = mat['mdl_flags']
-            if (mdl_flags & STUDIO_NF_ALPHA) != 0:
-                set_fast64_material_render_mode_texture(mat, 128)
-            elif (mdl_flags & STUDIO_NF_ADDITIVE) != 0:
-                set_fast64_material_render_mode_additive(mat, 128)
-            elif (mdl_flags & STUDIO_NF_MASKED) != 0:
-                set_fast64_material_render_mode_solid(mat, False)
-
-            if (mdl_flags & STUDIO_NF_FLATSHADE) == 0:
-                set_faces_smooth_for_material(obj, mat)
-
-
 def apply_invisible_materials_to_objects():
     for obj in bpy.data.objects:
         # Only check objects that have material slots
@@ -215,7 +181,6 @@ def stage_set_fast64_stuff(num, folder):
     bpy.data.scenes["Scene"].f3d_simple = False
 
     apply_brush_types_to_objects()
-    apply_material_flags_to_objects()
     apply_invisible_materials_to_objects()
     apply_rendermode_to_objects()
 
