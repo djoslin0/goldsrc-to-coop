@@ -9,11 +9,13 @@ from mathutils import Vector
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import goldsrc_parse_entities
 
+
 def is_in_mdl_collection(obj):
     for coll in obj.users_collection:
         if coll.name == 'MDL':
             return True
     return False
+
 
 def append_blend_objects(blend_path, object_names=None):
     """
@@ -217,6 +219,7 @@ def process_blender_objects(actors_folder, level_name):
             obj.fast64.sm64.game_object.use_individual_params = False
             obj.fast64.sm64.game_object.bparams = hex(entity_index)
 
+
 def triangulate_and_merge_all(threshold=1e-5):
     processed = 0
 
@@ -334,34 +337,8 @@ def calculate_aabb_lua():
 
     return output
 
-def main():
-    # -----------------------
-    # Get .blend file from command-line arguments
-    # -----------------------
-    argv = sys.argv
-    if "--" in argv:
-        argv = argv[argv.index("--") + 1:]  # keep argv as a list
-    else:
-        argv = []
 
-    if len(argv) < 1:
-        print("Usage: blender --background --python export-level.py -- BLEND_FILE LEVEL_NAME APPEND_BLEND")
-        sys.exit(1)
-
-    # grab commandline params
-    blend_file_path = argv[0]
-    level_name = argv[1]
-    append_file_path = argv[2]
-
-    # grab folder
-    folder = os.path.dirname(blend_file_path)
-    if not os.path.isfile(blend_file_path):
-        print(f"Error: .blend file does not exist: {blend_file_path}")
-        sys.exit(1)
-
-    # Open the .blend file
-    bpy.ops.wm.open_mainfile(filepath=blend_file_path)
-
+def stage_export_level(num, folder, level_name, append_file_path):
     # Append objects from another .blend file
     append_blend_objects(append_file_path)
 
@@ -392,14 +369,5 @@ def main():
     # Export level
     export_level(levels_folder, level_name)
 
-    # -----------------------
     # Save to new file
-    # -----------------------
-    save_path = os.path.join(folder, "7-export.blend")
-    bpy.ops.wm.save_mainfile(filepath=save_path)
-    print(f"Blender file saved: {save_path}")
-
-
-if __name__ == "__main__":
-    main()
-
+    bpy.ops.wm.save_mainfile(filepath=os.path.join(folder, f"{num}-export.blend"))

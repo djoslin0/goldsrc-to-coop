@@ -5,6 +5,12 @@ import re
 import math
 import bmesh
 
+
+def delete_default_objects():
+    bpy.ops.object.select_all(action='SELECT')
+    bpy.ops.object.delete(use_global=False)
+
+
 def recalc_normals_for_clipnode_objects():
     # Loop through all objects in the scene
     for obj in bpy.data.objects:
@@ -31,6 +37,61 @@ def recalc_normals_for_clipnode_objects():
                 bm.free()
 
                 print(f"Recalculated normals for object: {obj.name}")
+
+
+def import_level_objs(folder_path):
+    for filename in os.listdir(folder_path):
+        if not filename.lower().endswith(".obj"):
+            continue
+        obj_path = os.path.join(folder_path, filename)
+
+        print(f"Importing {obj_path}")
+        bpy.ops.import_scene.obj(filepath=obj_path)
+
+    recalc_normals_for_clipnode_objects()
+
+
+def import_mdl_objs(folder_path):
+    mdl_folder = os.path.join(folder_path, "mdl_models")
+    if not os.path.isdir(mdl_folder):
+        return
+
+    # Get or create "MDL" collection
+    if "MDL" not in bpy.data.collections:
+        mdl_collection = bpy.data.collections.new("MDL")
+        bpy.context.scene.collection.children.link(mdl_collection)
+    else:
+        mdl_collection = bpy.data.collections["MDL"]
+
+    # Iterate through files in the mdl_models subfolder
+    for filename in os.listdir(mdl_folder):
+        # Skip files that are not .obj files
+        if not filename.lower().endswith(".obj"):
+            continue
+
+        # Construct full path to the .obj file
+        obj_path = os.path.join(mdl_folder, filename)
+
+        # Print import status
+        print(f"Importing MDL {obj_path}")
+
+        # Capture selected objects before import to identify newly imported ones
+        prev_selected = set(bpy.context.selected_objects)
+
+        # Import the OBJ file using Blender's operator
+        bpy.ops.import_scene.obj(filepath=obj_path)
+
+        # Determine which objects were imported by checking selection difference
+        imported_objects = [obj for obj in bpy.context.selected_objects if obj not in prev_selected]
+
+        # Move imported objects to the MDL collection
+        for obj in imported_objects:
+            # Unlink from scene collection if linked
+            if obj.name in bpy.context.scene.collection.objects:
+                bpy.context.scene.collection.objects.unlink(obj)
+            # Link to the MDL collection
+            mdl_collection.objects.link(obj)
+
 
 def parse_entities(filepath):
     """Parse a GoldSrc-style entity lump file into a list of dicts, with simple logging."""
@@ -60,8 +121,7 @@ def parse_entities(filepath):
     return entities
 
 
-# Example usage inside Blender
-def import_entities_to_blender(filepath, scalar):
+def import_entities(filepath, scalar):
     scalar = 1 / -scalar
     entities = parse_entities(filepath)
 
@@ -106,79 +166,11 @@ def import_entities_to_blender(filepath, scalar):
 
     print("Entity import complete.")
 
-# -----------------------
-# Command-line args
-# -----------------------
-argv = sys.argv
-if "--" in argv:
-    argv = argv[argv.index("--") + 1:]
-else:
-    argv = []
 
-if len(argv) < 1:
-    print("Usage: blender --background --python import-all-objs.py -- FOLDER_PATH")
-    sys.exit(1)
+def stage_import_all_objs(num, folder_path, scalar):
+    delete_default_objects()
+    import_level_objs(folder_path)
+    import_mdl_objs(folder_path)
+    import_entities(folder_path + "/entities.txt", scalar)
+    bpy.ops.wm.save_mainfile(filepath=os.path.join(folder_path, f"{num}-imported-objs.blend"))
 
-folder_path = argv[0]
-entity_path = argv[1]
-scalar = float(argv[2])
-if not os.path.isdir(folder_path):
-    print(f"Error: folder does not exist: {folder_path}")
-    sys.exit(1)
-
-# -----------------------
-# Delete default objects
-# -----------------------
-bpy.ops.object.select_all(action='SELECT')
-bpy.ops.object.delete(use_global=False)
-
-# -----------------------
-# Import OBJ files
-# -----------------------
-for filename in os.listdir(folder_path):
-    if filename.lower().endswith(".obj"):
-        obj_path = os.path.join(folder_path, filename)
-        print(f"Importing {obj_path}")
-        bpy.ops.import_scene.obj(filepath=obj_path)
-
-recalc_normals_for_clipnode_objects()
-
-# -----------------------
-# Import MDL OBJ files
-# -----------------------
-
-# Get or create "MDL" collection
-if "MDL" not in bpy.data.collections:
-    mdl_collection = bpy.data.collections.new("MDL")
-    bpy.context.scene.collection.children.link(mdl_collection)
-else:
-    mdl_collection = bpy.data.collections["MDL"]
-
-# Import MDL OBJ files
-mdl_folder = os.path.join(folder_path, "mdl_models")
-if os.path.isdir(mdl_folder):
-    for filename in os.listdir(mdl_folder):
-        if filename.lower().endswith(".obj"):
-            obj_path = os.path.join(mdl_folder, filename)
-            print(f"Importing MDL {obj_path}")
-            prev_selected = set(bpy.context.selected_objects)
-            bpy.ops.import_scene.obj(filepath=obj_path)
-            imported_objects = [obj for obj in bpy.context.selected_objects if obj not in prev_selected]
-            for obj in imported_objects:
-                if obj.name in bpy.context.scene.collection.objects:
-                    bpy.context.scene.collection.objects.unlink(obj)
-                mdl_collection.objects.link(obj)
-
-# -----------------------
-# Parse and import entities
-# -----------------------
-import_entities_to_blender(entity_path, scalar)
-
-print("✅ All OBJ files imported successfully.")
-
-# -----------------------
-# Save the Blender file
-# -----------------------
-blend_file_path = os.path.join(folder_path, "1-imported-objs.blend")
-bpy.ops.wm.save_mainfile(filepath=blend_file_path)
-print(f"Blender file saved as: {blend_file_path}")

@@ -15,11 +15,13 @@ trigger_names = [
     "env_bubbles",
 ]
 
+
 invisible_mat_names = [
     "null_f3d",
     "sky_f3d",
     "sky_LM"
 ]
+
 
 # mdl flags
 STUDIO_NF_FLATSHADE  = 0x0001
@@ -31,11 +33,13 @@ STUDIO_NF_ADDITIVE   = 0x0020
 STUDIO_NF_MASKED     = 0x0040
 STUDIO_NF_UV_COORDS  = (1<<31)
 
+
 def is_invisible_mat(name):
     for i in invisible_mat_names:
         if name.lower().startswith(i):
             return True
     return False
+
 
 def update_material_cache(mat):
     # Update the material's cache using context override
@@ -44,10 +48,12 @@ def update_material_cache(mat):
     with bpy.context.temp_override(**override):
         bpy.ops.material.update_f3d_nodes()
 
+
 def set_fast64_material_invisible(mat):
     mat.f3d_mat.draw_layer.sm64 = '4'
     mat.f3d_mat.combiner1.D_alpha = '0'
     update_material_cache(mat)
+
 
 def set_fast64_material_render_mode_color(mat, color, alpha):
     # TODO: additive
@@ -59,6 +65,7 @@ def set_fast64_material_render_mode_color(mat, color, alpha):
     mat.f3d_mat.prim_color = (color[0]/255, color[1]/255, color[2]/255, alpha/255)
     update_material_cache(mat)
 
+
 def set_fast64_material_render_mode_texture(mat, alpha):
     mat.f3d_mat.draw_layer.sm64 = '5'
     mat.f3d_mat.combiner1.A = '0'
@@ -69,11 +76,13 @@ def set_fast64_material_render_mode_texture(mat, alpha):
     mat.f3d_mat.prim_color = (1.0, 1.0, 1.0, alpha/255)
     update_material_cache(mat)
 
+
 def set_fast64_material_render_mode_glow(mat, alpha):
     # TODO: additive
     set_fast64_material_render_mode_texture(mat, alpha)
     mat.f3d_mat.rdp_settings.g_cull_back = False
     update_material_cache(mat)
+
 
 def set_fast64_material_render_mode_solid(mat, cull_back = True):
     mat.f3d_mat.draw_layer.sm64 = '4'
@@ -81,11 +90,13 @@ def set_fast64_material_render_mode_solid(mat, cull_back = True):
     mat.f3d_mat.rdp_settings.g_cull_back = cull_back
     update_material_cache(mat)
 
+
 def set_fast64_material_render_mode_additive(mat, alpha):
     # TODO: additive
     set_fast64_material_render_mode_texture(mat, alpha)
     mat.f3d_mat.rdp_settings.g_cull_back = False
     update_material_cache(mat)
+
 
 def set_faces_smooth_for_material(obj, mat):
     if obj.type != 'MESH':
@@ -97,9 +108,8 @@ def set_faces_smooth_for_material(obj, mat):
                     polygon.use_smooth = True
             break
 
-def set_fast64_stuff():
-    bpy.data.scenes["Scene"].f3d_simple = False
 
+def apply_brush_types_to_objects():
     for obj in bpy.data.objects:
         obj_name = obj.name
 
@@ -122,7 +132,8 @@ def set_fast64_stuff():
             # No '#' found
             obj["brush_type"] = None
 
-    # Loop through every object in the scene
+
+def apply_material_flags_to_objects():
     for obj in bpy.data.objects:
         # Only check objects that have material slots
         if not hasattr(obj, "material_slots"):
@@ -144,11 +155,25 @@ def set_fast64_stuff():
             if (mdl_flags & STUDIO_NF_FLATSHADE) == 0:
                 set_faces_smooth_for_material(obj, mat)
 
+
+def apply_invisible_materials_to_objects():
+    for obj in bpy.data.objects:
+        # Only check objects that have material slots
+        if not hasattr(obj, "material_slots"):
+            continue
+
         # replace sky/null textures
         for slot in obj.material_slots:
             mat = slot.material
             if mat and is_invisible_mat(mat.name):
                 set_fast64_material_invisible(mat)
+
+
+def apply_rendermode_to_objects():
+    for obj in bpy.data.objects:
+        # Only check objects that have material slots
+        if not hasattr(obj, "material_slots"):
+            continue
 
         # set rendermode
         try:
@@ -186,38 +211,12 @@ def set_fast64_stuff():
                 set_fast64_material_render_mode_additive(new_mat, entity_renderamt)
 
 
-def main():
-    # -----------------------
-    # Get .blend file from command-line arguments
-    # -----------------------
-    argv = sys.argv
-    if "--" in argv:
-        argv = argv[argv.index("--") + 1:]  # keep argv as a list
-    else:
-        argv = []
+def stage_set_fast64_stuff(num, folder):
+    bpy.data.scenes["Scene"].f3d_simple = False
 
-    if len(argv) < 1:
-        print("Usage: blender --background --python set-fast64-stuff.py -- BLEND_FILE")
-        sys.exit(1)
+    apply_brush_types_to_objects()
+    apply_material_flags_to_objects()
+    apply_invisible_materials_to_objects()
+    apply_rendermode_to_objects()
 
-    blend_file_path = argv[0]
-    if not os.path.isfile(blend_file_path):
-        print(f"Error: .blend file does not exist: {blend_file_path}")
-        sys.exit(1)
-
-    # Open the .blend file
-    bpy.ops.wm.open_mainfile(filepath=blend_file_path)
-
-    set_fast64_stuff()
-
-    # -----------------------
-    # Save to new file
-    # -----------------------
-    folder = os.path.dirname(blend_file_path)
-    save_path = os.path.join(folder, "6-set-fast64.blend")
-    bpy.ops.wm.save_mainfile(filepath=save_path)
-    print(f"Blender file saved: {save_path}")
-
-
-if __name__ == "__main__":
-    main()
+    bpy.ops.wm.save_mainfile(filepath=os.path.join(folder, f"{num}-set-fast64.blend"))

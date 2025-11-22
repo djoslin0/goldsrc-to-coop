@@ -72,26 +72,8 @@ REM Run the command to convert BSP to OBJ and export the entities
 REM Adjust gamma for atlas images
 FOR %%f IN ("%OUT_DIR%\atlases\*.png") DO "%MAGICK_PATH%" "%%f" -level 0%%,100%%,1.3 "%%f"
 
-REM Import all OBJ files into Blender
-"%BLENDER_PATH%" --background --python scripts/blender/import-all-objs.py -- "%OUT_DIR%" "%OUT_DIR%/entities.txt" "%SCALE%"
-
-REM Combine OBJs to UV2
-"%BLENDER_PATH%" --background --python scripts/blender/combine-into-uv2.py -- "%OUT_DIR%/1-imported-objs.blend"
-
-REM Set fast64 stuff
-"%BLENDER_PATH%" --background --python scripts/blender/fix-up-mesh.py -- "%OUT_DIR%/2-combine-uv2.blend"
-
-REM Convert materials to blender-visible lightmap
-"%BLENDER_PATH%" --background --python scripts/blender/blender-lightmap.py -- "%OUT_DIR%/3-fix-up-mesh.blend"
-
-REM Convert materials to coop lightmap
-"%BLENDER_PATH%" --background --python scripts/blender/coop-lightmap.py -- "%OUT_DIR%/3-fix-up-mesh.blend"
-
-REM Set fast64 stuff
-"%BLENDER_PATH%" --background --python scripts/blender/set-fast64-stuff.py -- "%OUT_DIR%/5-coop-lightmap.blend"
-
-REM Export level
-"%BLENDER_PATH%" --background --python scripts/blender/export-level.py -- "%OUT_DIR%/6-set-fast64.blend" "%BSP_NAME%" "%BLEND_EXPORT_PATH%"
+REM Run blender goldsrc pipeline
+"%BLENDER_PATH%" --background --python scripts/blender/goldsrc_pipeline.py -- "%OUT_DIR%" "%BSP_NAME%" "%BLEND_EXPORT_PATH%" "%SCALE%"
 
 :skip_conversion
 

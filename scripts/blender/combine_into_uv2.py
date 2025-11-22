@@ -6,12 +6,14 @@ import os
 # combine into uv2 #
 ####################
 
+
 def get_mesh_signature(obj):
     """Return a simple signature for comparing mesh geometry."""
     if obj.type != 'MESH':
         return None
     mesh = obj.data
     return (len(mesh.vertices), len(mesh.polygons))
+
 
 def assign_lightmap_texture(orig_mat, dup_mat):
     """
@@ -22,6 +24,7 @@ def assign_lightmap_texture(orig_mat, dup_mat):
         return
 
     orig_mat["lightmap_texture"] = dup_mat.name + '.png'
+
 
 def assign_materials_per_face(original, duplicate):
     """
@@ -71,7 +74,8 @@ def assign_materials_per_face(original, duplicate):
                 mat_map[key] = orig_mat_index
                 poly.material_index = orig_mat_index
 
-def combine_duplicate_uvs():
+
+def stage_combine_uv2(num, folder):
     """
     For each mesh object in the current Blender scene, if there is a duplicate
     (NAME.001) with the same geometry, copy its UVs to a new UVMap_2 on the original
@@ -129,34 +133,5 @@ def combine_duplicate_uvs():
         bpy.data.objects.remove(duplicate, do_unlink=True)
         print(f"Deleted {dup_name}")
 
-# -----------------------
-# Main script entry
-# -----------------------
+    bpy.ops.wm.save_mainfile(filepath=os.path.join(folder, f"{num}-combine-uv2.blend"))
 
-# Get .blend file from command-line arguments after "--"
-argv = sys.argv
-if "--" in argv:
-    argv = argv[argv.index("--") + 1:]  # keep argv as a list
-else:
-    argv = []
-
-if len(argv) < 1:
-    print("Usage: blender --background --python combine-into-uv2.py -- BLEND_FILE")
-    sys.exit(1)
-
-blend_file_path = argv[0]
-if not os.path.isfile(blend_file_path):
-    print(f"Error: .blend file does not exist: {blend_file_path}")
-    sys.exit(1)
-
-# Open the .blend file
-bpy.ops.wm.open_mainfile(filepath=blend_file_path)
-
-# Run the UV combine logic
-combine_duplicate_uvs()
-
-# Save to a new file in the same folder
-folder = os.path.dirname(blend_file_path)
-save_path = os.path.join(folder, "2-combine-uv2.blend")
-bpy.ops.wm.save_mainfile(filepath=save_path)
-print(f"Blender file saved: {save_path}")
