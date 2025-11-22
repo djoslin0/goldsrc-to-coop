@@ -21,116 +21,86 @@ def process_object(obj, phase):
 
     bm.verts.ensure_lookup_table()
     bm.edges.ensure_lookup_table()
-    bm.faces.ensure_lookup_table()
 
-    # Count vertices at start
     verts_before = len(bm.verts)
 
-    # -------------------------------
-    # 1) INITIAL MERGE BY DISTANCE
-    # -------------------------------
-    removed = bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=THRESHOLD) or {}
+    # Merge doubles early (fast)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=THRESHOLD)
+
     bm.verts.ensure_lookup_table()
     bm.edges.ensure_lookup_table()
-    bm.faces.ensure_lookup_table()
 
-    # -------------------------------
-    # 2) INITIAL TRIANGULATE
-    # -------------------------------
-    bmesh.ops.triangulate(bm, faces=bm.faces)
-    bm.verts.ensure_lookup_table()
-    bm.edges.ensure_lookup_table()
-    bm.faces.ensure_lookup_table()
-
-    if len(bm.verts) == 0 or len(bm.edges) == 0:
-        bm.to_mesh(me)
-        bm.free()
+    if not bm.verts or not bm.edges:
+        bm.to_mesh(me); bm.free()
         return 0
 
-    # -------------------------------
-    # 3) BUILD KD TREE FOR EDGE CENTERS
-    # -------------------------------
-    edge_count = len(bm.edges)
-    kd = KDTree(edge_count)
-    edge_map = []
-    max_half = 0.0
+    # ---- Build compact edge center table ----
+    edges = bm.edges
+    edge_count = len(edges)
 
-    for i, e in enumerate(bm.edges):
-        v1, v2 = e.verts
-        center = (v1.co + v2.co) * 0.5
+    kd = KDTree(edge_count)
+    edge_centers = [None] * edge_count
+    edge_data = [None] * edge_count
+
+    max_half = 0.0
+    for i, e in enumerate(edges):
+        v1 = e.verts[0].co
+        v2 = e.verts[1].co
+        center = (v1 + v2) * 0.5
+        edge_centers[i] = center
+        edge_data[i] = (e, v1, v2)
         kd.insert(center, i)
-        edge_map.append(e)
-        half = (v2.co - v1.co).length * 0.5
+        half = (v2 - v1).length_squared ** 0.5 * 0.5
         if half > max_half:
             max_half = half
+
     kd.balance()
     search_radius = THRESHOLD + max_half
 
+    # ---- Closest point utility (inlined for speed) ----
     def closest_point_and_t(pt, a, b):
         ab = b - a
         ab_len_sq = ab.length_squared
         if ab_len_sq == 0:
-            return a.copy(), 0.0
-        t = max(0.0, min(1.0, (pt - a).dot(ab) / ab_len_sq))
+            return a, 0.0
+        t = (pt - a).dot(ab) / ab_len_sq
+        if t < 0.0: t = 0.0
+        elif t > 1.0: t = 1.0
         return a + ab * t, t
 
-    # -------------------------------
-    # 4) COLLECT EDGE SPLIT REQUESTS
-    # -------------------------------
-    pending_splits = {}
+    # ---- Collect splits ----
+    pending = {}
+
     for v in bm.verts:
         A = v.co
         hits = kd.find_range(A, search_radius)
-        for hit in hits:
-            idx = hit[1] if len(hit) == 3 else hit[1]
-            e = edge_map[idx]
+        for _, idx, _ in hits:
+            e, v1, v2 = edge_data[idx]
             if v in e.verts:
                 continue
-            v1, v2 = e.verts
-            B, t = closest_point_and_t(A, v1.co, v2.co)
-            if (A - B).length < THRESHOLD:
-                pending_splits.setdefault(e, []).append(t)
+            B, t = closest_point_and_t(A, v1, v2)
+            if (A - B).length_squared < THRESHOLD * THRESHOLD:
+                pending.setdefault(e, []).append(t)
 
-    # -------------------------------
-    # 5) APPLY EDGE SPLITS
-    # -------------------------------
-    for e, t_list in pending_splits.items():
-        unique_t = sorted(set(t_list))
-        for t in unique_t:
-            try:
-                bmesh.utils.edge_split(e, e.verts[0], t)
-            except:
-                pass
+    # ---- Apply edge splits ----
+    for e, t_list in pending.items():
+        for t in sorted(set(t_list)):
+            bmesh.utils.edge_split(e, e.verts[0], t)
 
-    # -------------------------------
-    # 6) POST-SPLIT MERGE BY DISTANCE
-    # -------------------------------
-    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=THRESHOLD) or {}
-
-    # -------------------------------
-    # 7) FINAL TRIANGULATE
-    # -------------------------------
+    # Final merge + final triangulate
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=THRESHOLD)
     bmesh.ops.triangulate(bm, faces=bm.faces)
 
-    # -------------------------------
-    # 8) SHADE FLAT
-    # -------------------------------
-    for face in bm.faces:
-        face.smooth = False
+    for f in bm.faces:
+        f.smooth = False
 
-    # -------------------------------
-    # 9) WRITE BACK TO MESH
-    # -------------------------------
     bm.to_mesh(me)
     bm.free()
 
-    # Count vertices after processing
     verts_after = len(me.vertices)
-    created_count = verts_after - verts_before
-    
-    print(f"\nProcessed object '{obj.name}', phase {phase}: {created_count} vertices")
-
-    return created_count
+    created = verts_after - verts_before
+    print(f"Processed {obj.name}, phase {phase}: {created} verts")
+    return created
 
 # -------------------------------
 # MAIN: process all mesh objects in the scene
@@ -140,7 +110,10 @@ def process_objects():
     for obj in bpy.context.scene.objects:
         if obj.type == 'MESH':
             for i in range(3):
-                total_created += process_object(obj, i)
+                created = process_object(obj, i)
+                total_created += created
+                if created == 0:
+                    break
     print(f"Total vertices created across scene: {total_created}")
 
 # -----------------------
