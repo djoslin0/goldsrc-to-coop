@@ -5,6 +5,57 @@ import convert_mdls
 import os
 import set_fast64_stuff
 
+def set_fast64_material_spr_opaque(mat):
+    mat.f3d_mat.draw_layer.sm64 = '1'
+
+    mat.f3d_mat.combiner1.A = 'ENVIRONMENT'
+    mat.f3d_mat.combiner1.B = '0'
+    mat.f3d_mat.combiner1.C = 'TEXEL0'
+    mat.f3d_mat.combiner1.D = '0'
+
+    mat.f3d_mat.combiner1.A_alpha = '1'
+    mat.f3d_mat.combiner1.B_alpha = '0'
+    mat.f3d_mat.combiner1.C_alpha = 'ENVIRONMENT'
+    mat.f3d_mat.combiner1.D_alpha = '0'
+
+    mat.f3d_mat.rdp_settings.g_cull_back = True
+    set_fast64_stuff.update_material_cache(mat)
+
+def set_fast64_material_spr_cutout(mat):
+    mat.f3d_mat.draw_layer.sm64 = '4'
+
+    mat.f3d_mat.combiner1.A = 'ENVIRONMENT'
+    mat.f3d_mat.combiner1.B = '0'
+    mat.f3d_mat.combiner1.C = 'TEXEL0'
+    mat.f3d_mat.combiner1.D = '0'
+
+    mat.f3d_mat.combiner1.A_alpha = 'ENVIRONMENT'
+    mat.f3d_mat.combiner1.B_alpha = '0'
+    mat.f3d_mat.combiner1.C_alpha = 'TEXEL0'
+    mat.f3d_mat.combiner1.D_alpha = '0'
+    #mat.f3d_mat.combiner1.D_alpha = 'PRIMITIVE'
+
+    #mat.f3d_mat.prim_color = (1, 1, 1, 0.15)
+
+    mat.f3d_mat.rdp_settings.g_cull_back = True
+    set_fast64_stuff.update_material_cache(mat)
+
+def set_fast64_material_spr_alpha(mat):
+    mat.f3d_mat.draw_layer.sm64 = '5'
+
+    mat.f3d_mat.combiner1.A = 'ENVIRONMENT'
+    mat.f3d_mat.combiner1.B = '0'
+    mat.f3d_mat.combiner1.C = 'TEXEL0'
+    mat.f3d_mat.combiner1.D = '0'
+
+    mat.f3d_mat.combiner1.A_alpha = 'ENVIRONMENT'
+    mat.f3d_mat.combiner1.B_alpha = '0'
+    mat.f3d_mat.combiner1.C_alpha = 'TEXEL0'
+    mat.f3d_mat.combiner1.D_alpha = '0'
+
+    mat.f3d_mat.rdp_settings.g_cull_back = True
+    set_fast64_stuff.update_material_cache(mat)
+
 def convert_spr(src_sprites_folder, sprite_folder, actors_folder, scalar):
     # Reset the 3D cursor to the world origin
     bpy.context.scene.cursor.location = (0, 0, 0)
@@ -23,14 +74,39 @@ def convert_spr(src_sprites_folder, sprite_folder, actors_folder, scalar):
     bpy.ops.object.empty_add(type='PLAIN_AXES', location=(0, 0, 0))
     sprite_root = bpy.context.active_object
     sprite_root.name = sprite_folder
-    sprite_root.sm64_obj_type = "Switch"
-    sprite_root.switchFunc = "geo_switch_anim_state"
+
+    # Add an empty called a_geo_asm
+    bpy.ops.object.empty_add(type='PLAIN_AXES', location=(0, 0, 0))
+    geo_asm = bpy.context.active_object
+    geo_asm.name = "a_geo_asm"
+    geo_asm.sm64_obj_type = "Geo ASM"
+    geo_asm.fast64.sm64.geo_asm.func = "g_goldsrc_spr"    
+    geo_asm.fast64.sm64.geo_asm.param = "0"
+    geo_asm.parent = sprite_root
+
+    # Add an empty called b_display_list
+    for layer in ["1", "4", "5"]:
+        bpy.ops.object.empty_add(type='PLAIN_AXES', location=(0, 0, 0))
+        display_list = bpy.context.active_object
+        display_list.name = f"b_display_list_{layer}"
+        display_list.sm64_obj_type = "Geo Displaylist"
+        display_list.draw_layer_static = layer
+        display_list.dlReference = "NULL"
+        display_list.parent = sprite_root
+
+    # Add an empty called sprite_root
+    bpy.ops.object.empty_add(type='PLAIN_AXES', location=(0, 0, 0))
+    switch_node = bpy.context.active_object
+    switch_node.name = "c_switch"
+    switch_node.sm64_obj_type = "Switch"
+    switch_node.switchFunc = "geo_switch_anim_state"
+    switch_node.parent = sprite_root
 
     # Add an empty to fix the following switch
     bpy.ops.object.empty_add(type='PLAIN_AXES', location=(0, 0, 0))
     aaa_null = bpy.context.active_object
     aaa_null.name = 'aaa_null'
-    aaa_null.parent = sprite_root
+    aaa_null.parent = switch_node
 
     # count anim states
     anim_states = 0
@@ -59,8 +135,8 @@ def convert_spr(src_sprites_folder, sprite_folder, actors_folder, scalar):
 
             obj.name = f"b_{sprite_folder}_g{group_idx:03d}_f{frame_idx:03d}"
 
-            # Set the parent to sprite_root
-            obj.parent = sprite_root
+            # Set the parent to switch_node
+            obj.parent = switch_node
             anim_states = anim_states + 1
 
             # Create material using texture from sprite_folder/GROUP_IDX/FRAME_IDX.png
@@ -99,8 +175,9 @@ def convert_spr(src_sprites_folder, sprite_folder, actors_folder, scalar):
         for i, slot in enumerate(obj.material_slots):
             original_mat = slot.material
             if original_mat:
+                set_fast64_material_spr_opaque(original_mat)
                 new_mat = original_mat.copy()
-                set_fast64_stuff.set_fast64_material_render_mode_use_alpha_channel(new_mat, True)
+                set_fast64_material_spr_alpha(new_mat)
                 slot.material = new_mat
 
         anim_states = anim_states + 1    # create alpha versions
@@ -123,12 +200,12 @@ def convert_spr(src_sprites_folder, sprite_folder, actors_folder, scalar):
             original_mat = slot.material
             if original_mat:
                 new_mat = original_mat.copy()
-                set_fast64_stuff.set_fast64_material_render_mode_solid(new_mat, True, True)
+                set_fast64_material_spr_cutout(new_mat)
                 slot.material = new_mat
 
         anim_states = anim_states + 1
 
-    sprite_root.switchParam = anim_states
+    switch_node.switchParam = anim_states
 
     # Select sprite_root object in object mode
     bpy.ops.object.select_all(action='DESELECT')
