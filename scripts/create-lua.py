@@ -97,12 +97,15 @@ def collect_sprite_data(levelname):
                 data = json.load(file)
             sprite_data[sprite_folder] = data['header']
 
+    used_fields = ['type', 'texFormat', 'numframes']
+
     output = ''
 
     for k, v in sprite_data.items():
         output += f'sprites["{k}"]' + ' = {\n'
         for key, value in v.items():
-            output += f'    ["{key}"] = {value},\n'
+            if key in used_fields:
+                output += f'    ["{key}"] = {value},\n'
         output += '}\n'
 
     return output

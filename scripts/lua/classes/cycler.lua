@@ -18,11 +18,13 @@ local dt = 1/30
 function Cycler:new(ent, obj)
     local self = setmetatable(GoldsrcEntity:new(ent, obj), Cycler)
 
+    local pitch = (ent.angles and ent.angles[3]) or 0
     local yaw   = (ent.angles and ent.angles[2]) or 0
-    local pitch = (ent.angles and ent.angles[1]) or 0
+    local roll  = (ent.angles and ent.angles[1]) or 0
 
     obj.oFaceAnglePitch = degrees_to_sm64(pitch)
     obj.oFaceAngleYaw   = degrees_to_sm64(yaw)
+    obj.oFaceAngleRoll  = degrees_to_sm64(roll)
 
     local is_mdl = ent.model:sub(-4) == ".mdl"
     local is_spr = ent.model:sub(-4) == ".spr"
@@ -33,6 +35,10 @@ function Cycler:new(ent, obj)
         local geo_name = GoldsrcSpr.geo_path(ent.model)
         local e_model_id = smlua_model_util_get_id(geo_name)
         obj_set_model_extended(obj, e_model_id)
+
+        if is_mdl and ent.body then
+            obj.oAnimState = ent.body
+        end
 
         if is_spr then
             self.spr = GoldsrcSpr:new(self)

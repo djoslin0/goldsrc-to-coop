@@ -74,15 +74,10 @@ def set_fast64_material_render_mode_glow(mat, alpha):
     update_material_cache(mat)
 
 
-def set_fast64_material_render_mode_solid(mat, cull_back = True, boost_alpha = False):
+def set_fast64_material_render_mode_solid(mat, cull_back = True):
     mat.f3d_mat.draw_layer.sm64 = '4'
     mat.f3d_mat.combiner1.D_alpha = 'TEXEL0'
     mat.f3d_mat.rdp_settings.g_cull_back = cull_back
-
-    if boost_alpha:
-        mat.f3d_mat.combiner1.A_alpha = '1'
-        mat.f3d_mat.combiner1.C_alpha = 'PRIMITIVE'
-        mat.f3d_mat.prim_color = (1, 1, 1, 0.15)
 
     update_material_cache(mat)
 
@@ -179,7 +174,7 @@ def apply_rendermode_to_objects():
             elif entity_rendermode == 3:
                 set_fast64_material_render_mode_glow(new_mat, entity_renderamt)
             elif entity_rendermode == 4:
-                set_fast64_material_render_mode_solid(new_mat)
+                set_fast64_material_render_mode_solid(new_mat, entity_index == 0)
             elif entity_rendermode == 5:
                 set_fast64_material_render_mode_additive(new_mat, entity_renderamt)
 

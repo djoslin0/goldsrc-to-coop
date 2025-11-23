@@ -18,7 +18,7 @@ def set_fast64_material_spr_opaque(mat):
     mat.f3d_mat.combiner1.C_alpha = 'ENVIRONMENT'
     mat.f3d_mat.combiner1.D_alpha = '0'
 
-    mat.f3d_mat.rdp_settings.g_cull_back = True
+    mat.f3d_mat.rdp_settings.g_cull_back = False
     set_fast64_stuff.update_material_cache(mat)
 
 def set_fast64_material_spr_cutout(mat):
@@ -37,7 +37,7 @@ def set_fast64_material_spr_cutout(mat):
 
     #mat.f3d_mat.prim_color = (1, 1, 1, 0.15)
 
-    mat.f3d_mat.rdp_settings.g_cull_back = True
+    mat.f3d_mat.rdp_settings.g_cull_back = False
     set_fast64_stuff.update_material_cache(mat)
 
 def set_fast64_material_spr_alpha(mat):
@@ -53,7 +53,7 @@ def set_fast64_material_spr_alpha(mat):
     mat.f3d_mat.combiner1.C_alpha = 'TEXEL0'
     mat.f3d_mat.combiner1.D_alpha = '0'
 
-    mat.f3d_mat.rdp_settings.g_cull_back = True
+    mat.f3d_mat.rdp_settings.g_cull_back = False
     set_fast64_stuff.update_material_cache(mat)
 
 def convert_spr(src_sprites_folder, sprite_folder, actors_folder, scalar):
@@ -94,7 +94,7 @@ def convert_spr(src_sprites_folder, sprite_folder, actors_folder, scalar):
         display_list.dlReference = "NULL"
         display_list.parent = sprite_root
 
-    # Add an empty called sprite_root
+    # Add an empty called switch_node
     bpy.ops.object.empty_add(type='PLAIN_AXES', location=(0, 0, 0))
     switch_node = bpy.context.active_object
     switch_node.name = "c_switch"

@@ -1,6 +1,7 @@
 import bpy
 import os
-
+import json
+import re
 import set_fast64_stuff
 import export_level
 
@@ -15,14 +16,90 @@ STUDIO_NF_MASKED     = 0x0040
 STUDIO_NF_UV_COORDS  = (1<<31)
 
 
+mdl_jsons = {}
+
+def get_root_name(obj):
+    while obj.parent:
+        obj = obj.parent
+    return obj.name
+
 def is_in_mdl_collection(obj):
     for coll in obj.users_collection:
         if coll.name == 'MDL':
             return True
     return False
 
+def import_mdl(subdir_path, mdl_collection):
+    empty_name = os.path.basename(subdir_path)
 
-def import_mdl_objs(folder_path):
+    json_path = os.path.join(subdir_path, "mdl.json")
+    if os.path.exists(json_path):
+        with open(json_path, 'r') as f:
+            mdl_jsons[empty_name] = json.load(f)
+
+    # Create empty object
+    bpy.ops.object.empty_add(type='PLAIN_AXES', location=(0, 0, 0))
+    mdl_root = bpy.context.active_object
+    mdl_root.name = empty_name
+    mdl_collection.objects.link(mdl_root)
+    if mdl_root.name in bpy.context.scene.collection.objects:
+        bpy.context.scene.collection.objects.unlink(mdl_root)
+
+    # Add an empty called switch_node
+    bpy.ops.object.empty_add(type='PLAIN_AXES', location=(0, 0, 0))
+    switch_node = bpy.context.active_object
+    switch_node.name = "a_switch"
+    switch_node.sm64_obj_type = "Switch"
+    switch_node.switchFunc = "geo_switch_anim_state"
+    switch_node.parent = mdl_root
+    mdl_collection.objects.link(switch_node)
+    if switch_node.name in bpy.context.scene.collection.objects:
+        bpy.context.scene.collection.objects.unlink(switch_node)
+
+    # Add an empty to fix the following switch
+    bpy.ops.object.empty_add(type='PLAIN_AXES', location=(0, 0, 0))
+    aaa_null = bpy.context.active_object
+    aaa_null.name = 'aaa_null'
+    aaa_null.parent = switch_node
+    mdl_collection.objects.link(aaa_null)
+    if aaa_null.name in bpy.context.scene.collection.objects:
+        bpy.context.scene.collection.objects.unlink(aaa_null)
+
+    # Get all .obj files in subdir
+    obj_files = [f for f in os.listdir(subdir_path) if f.lower().endswith('.obj')]
+
+    imported_objects = []
+    for filename in obj_files:
+        obj_path = os.path.join(subdir_path, filename)
+        print(f"Importing MDL body {obj_path}")
+
+        # Capture selected before import
+        prev_selected = set(bpy.context.selected_objects)
+
+        # Import OBJ
+        bpy.ops.import_scene.obj(filepath=obj_path)
+
+        # Get newly imported objects
+        new_objs = [obj for obj in bpy.context.selected_objects if obj not in prev_selected]
+        imported_objects.extend(new_objs)
+
+        # Link each imported object to MDL collection
+        index = 0
+        for obj in new_objs:
+            obj.name = f"{os.path.basename(obj_path)}_{index:03d}"
+            index = index + 1
+            obj.parent = switch_node
+            if obj.name in bpy.context.scene.collection.objects:
+                bpy.context.scene.collection.objects.unlink(obj)
+            mdl_collection.objects.link(obj)
+
+    switch_node.switchParam = len(imported_objects)
+
+    # Deselect all
+    bpy.ops.object.select_all(action='DESELECT')
+
+
+def import_mdls(folder_path):
     mdl_folder = os.path.join(folder_path, "mdl_models")
     if not os.path.isdir(mdl_folder):
         return
@@ -34,71 +111,26 @@ def import_mdl_objs(folder_path):
     else:
         mdl_collection = bpy.data.collections["MDL"]
 
-    # Iterate through files in the mdl_models subfolder
-    for filename in os.listdir(mdl_folder):
-        # Skip files that are not .obj files
-        if not filename.lower().endswith(".obj"):
-            continue
-
-        # Construct full path to the .obj file
-        obj_path = os.path.join(mdl_folder, filename)
-
-        # Print import status
-        print(f"Importing MDL {obj_path}")
-
-        # Capture selected objects before import to identify newly imported ones
-        prev_selected = set(bpy.context.selected_objects)
-
-        # Import the OBJ file using Blender's operator
-        bpy.ops.import_scene.obj(filepath=obj_path)
-
-        # Determine which objects were imported by checking selection difference
-        imported_objects = [obj for obj in bpy.context.selected_objects if obj not in prev_selected]
-
-        # Move imported objects to the MDL collection
-        for obj in imported_objects:
-            # Unlink from scene collection if linked
-            if obj.name in bpy.context.scene.collection.objects:
-                bpy.context.scene.collection.objects.unlink(obj)
-            # Link to the MDL collection
-            mdl_collection.objects.link(obj)
+    # Iterate through subdirectories in the mdl_models folder
+    for subdir in os.listdir(mdl_folder):
+        subdir_path = os.path.join(mdl_folder, subdir)
+        if os.path.isdir(subdir_path):
+            import_mdl(subdir_path, mdl_collection)
 
 
 def convert_mdl_materials():
     # Convert materials object-by-object
     bpy.data.scenes["Scene"].bsdf_conv_all = False
 
-    # Store every mdl_flag per obj, per material slot
-    mdl_flags = {}
-
-    # Deselect all
-    for obj in bpy.data.objects:
-        obj.select_set(False)
-        mdl_flags[obj] = []
-
-    # Store mdl flags
-    for obj in bpy.data.objects:
-        for slot in obj.material_slots:
-            mat = slot.material
-            if not mat or not mat.use_nodes:
-                continue
-            bsdf_node = mat.node_tree.nodes.get('Principled BSDF')
-            if not bsdf_node:
-                continue
-            ior = bsdf_node.inputs['IOR'].default_value
-            mdl_flags[obj].append(int(ior))
-
-    # Convert to fast64 mats and remember mdl flags
+    # Convert to fast64 mats
     for obj in bpy.data.objects:
         if not is_in_mdl_collection(obj):
+            continue
+        if obj.type != 'MESH':
             continue
         obj.select_set(True)
         bpy.ops.object.convert_bsdf()
         obj.select_set(False)
-
-        for i, slot in enumerate(obj.material_slots):
-            mat = slot.material
-            mat['mdl_flags'] = mdl_flags[obj][i]
 
 
 def apply_material_flags_to_objects():
@@ -107,12 +139,20 @@ def apply_material_flags_to_objects():
         if not hasattr(obj, "material_slots"):
             continue
 
+        root_name = get_root_name(obj)
+        json_data = mdl_jsons.get(root_name, {})
+        textures = json_data.get('textures', {})
+
         # check for and apply mdl_flags
         for slot in obj.material_slots:
             mat = slot.material
-            if not mat or 'mdl_flags' not in mat:
+            if not mat or not mat.name:
                 continue
-            mdl_flags = mat['mdl_flags']
+
+            base_name = re.sub(r'(\.\d+)?_f3d$', '', mat.name)
+            mdl_flags = textures.get(base_name, {}).get('flags', 0)
+            mat['mdl_flags'] = mdl_flags
+
             if (mdl_flags & STUDIO_NF_ALPHA) != 0:
                 set_fast64_stuff.set_fast64_material_render_mode_texture(mat, 128)
             elif (mdl_flags & STUDIO_NF_ADDITIVE) != 0:
@@ -152,17 +192,19 @@ def stage_convert_mdls(folder):
     actors_folder = os.path.join(mod_folder, "actors")
     os.makedirs(actors_folder, exist_ok=True)
 
-    import_mdl_objs(folder)
+    import_mdls(folder)
     export_level.triangulate_and_merge_all()
 
     convert_mdl_materials()
     apply_material_flags_to_objects()
 
+    # Export only the root empty objects (not the child meshes)
     for obj in bpy.data.objects:
         if not is_in_mdl_collection(obj):
+            continue
+        if obj.parent:
             continue
         export_mdl(obj, actors_folder)
 
     # Save to new file
     bpy.ops.wm.save_mainfile(filepath=os.path.join(folder, f"z-convert-mdls.blend"))
-

@@ -10,6 +10,7 @@ parse_classes['cycler'] = {
     "sequence": parse_int,
 
     "model": parse_string,
+    "body": parse_int,
 
     "renderfx": parse_int,
     "rendermode": parse_int,

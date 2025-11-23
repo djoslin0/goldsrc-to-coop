@@ -21,11 +21,13 @@ EnvSprite.Flags = {
 function EnvSprite:new(ent, obj)
     local self = setmetatable(GoldsrcEntity:new(ent, obj), EnvSprite)
 
+    local pitch = (ent.angles and ent.angles[3]) or 0
     local yaw   = (ent.angles and ent.angles[2]) or 0
-    local pitch = (ent.angles and ent.angles[1]) or 0
+    local roll  = (ent.angles and ent.angles[1]) or 0
 
     obj.oFaceAnglePitch = degrees_to_sm64(pitch)
     obj.oFaceAngleYaw   = degrees_to_sm64(yaw)
+    obj.oFaceAngleRoll  = degrees_to_sm64(roll)
 
     local is_spr = ent.model:sub(-4) == ".spr"
     self.spr = nil

@@ -10,6 +10,7 @@ parse_classes['cycler_sprite'] = {
     "sequence": parse_int,
 
     "model": parse_string,
+    "body": parse_int,
 
     "renderfx": parse_int,
     "rendermode": parse_int,
