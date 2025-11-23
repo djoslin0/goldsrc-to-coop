@@ -3,7 +3,10 @@ import os
 import sys
 import re
 
-trigger_names = [
+ignore_collision_classes = [
+    "func_illusionary",
+    "func_water",
+    # common
     "func_vehiclecontrols",
     "func_tankcontrols",
     "func_bomb_target",
@@ -15,6 +18,19 @@ trigger_names = [
     "env_bubbles",
 ]
 
+ignore_render_classes = [
+    "func_clip",
+    # common
+    "func_vehiclecontrols",
+    "func_tankcontrols",
+    "func_bomb_target",
+    "func_hostage_rescue",
+    "func_buyzone",
+    "func_areaportal",
+    "func_monsterclip",
+    "func_clip_vphysics",
+    "env_bubbles",
+]
 
 invisible_mat_names = [
     "null_f3d",
@@ -78,8 +94,12 @@ def set_fast64_material_render_mode_solid(mat, cull_back = True):
     mat.f3d_mat.draw_layer.sm64 = '4'
     mat.f3d_mat.combiner1.D_alpha = 'TEXEL0'
     mat.f3d_mat.rdp_settings.g_cull_back = cull_back
-
     update_material_cache(mat)
+
+
+def set_fast64_material_water(mat):
+    mat.collision_type_simple = "SURFACE_WATER"
+    mat.f3d_mat.rdp_settings.g_cull_back = False
 
 
 def set_fast64_material_render_mode_additive(mat, alpha):
@@ -111,14 +131,12 @@ def apply_brush_types_to_objects():
             # Store brush_type as a custom property (optional)
             obj["brush_type"] = brush_type
 
-            if brush_type == "func_illusionary":
+            if brush_type in ignore_collision_classes:
                 obj["ignore_collision"] = True
-            elif brush_type == "func_clip":
+
+            if brush_type in ignore_render_classes:
                 obj["ignore_render"] = True
-            elif brush_type in trigger_names or brush_type.startswith('trigger_'):
-                obj["ignore_render"] = True
-                obj["ignore_collision"] = True
-                #obj.hide_viewport = True
+
         else:
             # No '#' found
             obj["brush_type"] = None
@@ -148,14 +166,18 @@ def apply_rendermode_to_objects():
             obj_name = obj.name
             entity_index = int(re.search(r'ENT_(\d+)#', obj_name).group(1))
             entity_obj = next((o for o in bpy.data.objects if o.name.startswith(f"{entity_index}#")), None)
-            entity_rendermode = int(entity_obj.get("rendermode"))
-            entity_renderamt = int(entity_obj.get("renderamt"))
-            entity_rendercolor = list(map(int, entity_obj.get("rendercolor").split()))
+            entity_rendermode = int(entity_obj.get("rendermode") or 0)
+            entity_renderamt = int(entity_obj.get("renderamt") or 255)
+            entity_rendercolor = list(map(int, (entity_obj.get("rendercolor") or "255 255 255").split()))
         except Exception as ex:
             continue
 
-        if entity_rendermode == 0:
+        is_water = 'brush_type' in obj and obj['brush_type'] == "func_water"
+
+        if entity_rendermode == 0 and not is_water:
             continue
+
+        ignore_collision = "ignore_collision" in obj and obj["ignore_collision"]
 
         # duplicate and alter materials for rendermode
         for i, slot in enumerate(obj.material_slots):
@@ -174,9 +196,12 @@ def apply_rendermode_to_objects():
             elif entity_rendermode == 3:
                 set_fast64_material_render_mode_glow(new_mat, entity_renderamt)
             elif entity_rendermode == 4:
-                set_fast64_material_render_mode_solid(new_mat, entity_index == 0)
+                set_fast64_material_render_mode_solid(new_mat, not ignore_collision)
             elif entity_rendermode == 5:
                 set_fast64_material_render_mode_additive(new_mat, entity_renderamt)
+
+            if is_water:
+                set_fast64_material_water(new_mat)
 
 
 def stage_set_fast64_stuff(num, folder):

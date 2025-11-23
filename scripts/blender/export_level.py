@@ -65,6 +65,40 @@ def export_object(objects_collection, area_obj, actors_folder, level_name, blend
     bpy.context.scene.cursor.location = entity.location
     bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
 
+    parent_collection = area_obj.users_collection[0] if area_obj.users_collection else bpy.context.scene.collection
+
+    # --- create extra sm64 class ---
+    if '_extra_sm64_class' in class_info:
+        extra_entity = entity.copy()
+        extra_entity.name = f"{entity_name}_extra"
+        extra_entity.parent = area_obj
+
+        # Link to the same parent collection
+        if extra_entity.name not in parent_collection.objects:
+            parent_collection.objects.link(extra_entity)
+
+        extra_entity.sm64_obj_type = class_info['_extra_sm64_class']
+        if extra_entity.sm64_obj_type == 'Water Box':
+            extra_entity.rotation_euler = (0, 0, 0)
+            extra_entity.scale = blender_object.dimensions / 2
+            # delete every face of blender_object whose normal isn't facing up
+            bm = bmesh.new()
+            bm.from_mesh(blender_object.data)
+            faces_to_remove = [face for face in bm.faces if face.normal.z < 0.5]
+            for face in faces_to_remove:
+                bm.faces.remove(face)
+            # Remove edges with no linked faces
+            edges_to_remove = [e for e in bm.edges if len(e.link_faces) == 0]
+            for e in edges_to_remove:
+                bm.edges.remove(e)
+            # Remove vertices with no linked edges
+            verts_to_remove = [v for v in bm.verts if len(v.link_edges) == 0]
+            for v in verts_to_remove:
+                bm.verts.remove(v)
+            bm.to_mesh(blender_object.data)
+            bm.free()
+            blender_object.data.update()
+
     # --- Step 4: Export object visuals ---
     for col in blender_object.users_collection:
         col.objects.unlink(blender_object)
@@ -84,7 +118,6 @@ def export_object(objects_collection, area_obj, actors_folder, level_name, blend
         bpy.ops.object.sm64_export_geolayout_object()
 
     # --- Step 5: Export collision ---
-
     bpy.ops.object.select_all(action='DESELECT')
     blender_object.select_set(True)
     bpy.context.view_layer.objects.active = blender_object

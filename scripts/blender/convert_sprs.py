@@ -234,10 +234,13 @@ def stage_convert_sprs(folder, scalar):
     os.makedirs(actors_folder, exist_ok=True)
 
     # Loop through every folder within src_sprites_folder and call convert_spr()
-    for sprite_folder in os.listdir(src_sprites_folder):
-        sprite_path = os.path.join(src_sprites_folder, sprite_folder)
-        if os.path.isdir(sprite_path):
-            convert_spr(src_sprites_folder, sprite_folder, actors_folder, scalar)
+    if os.path.exists(src_sprites_folder):
+        for sprite_folder in os.listdir(src_sprites_folder):
+            sprite_path = os.path.join(src_sprites_folder, sprite_folder)
+            if os.path.isdir(sprite_path):
+                convert_spr(src_sprites_folder, sprite_folder, actors_folder, scalar)
+    else:
+        print("Warning: sprites folder not found, skipping sprite conversion.")
 
     # Save to new file
     bpy.ops.wm.save_mainfile(filepath=os.path.join(folder, f"z-convert-sprs.blend"))

@@ -90,6 +90,10 @@ def collect_sprite_data(levelname):
 
     sprite_data = {}
 
+    if not os.path.exists(src_sprites_folder):
+        print("Warning: sprites folder not found, skipping sprite data collection.")
+        return ''
+
     for sprite_folder in os.listdir(src_sprites_folder):
         sprite_path = os.path.join(src_sprites_folder, sprite_folder)
         if os.path.isdir(sprite_path):
