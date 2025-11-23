@@ -35,9 +35,6 @@ end
 ------------------------------------
 -- Registration
 ------------------------------------
-
-goldsrc_add_class("env_glow", function(ent, obj)
-    return EnvGlow:new(ent, obj)
-end)
+GoldsrcEntity.register("env_glow", EnvGlow)
 
 return EnvGlow

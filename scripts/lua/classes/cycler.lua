@@ -22,7 +22,7 @@ function Cycler:new(ent, obj)
     local pitch = (ent.angles and ent.angles[1]) or 0
 
     obj.oFaceAnglePitch = degrees_to_sm64(pitch)
-    obj.oFaceAngleYaw = degrees_to_sm64(yaw)
+    obj.oFaceAngleYaw   = degrees_to_sm64(yaw)
 
     local is_mdl = ent.model:sub(-4) == ".mdl"
     local is_spr = ent.model:sub(-4) == ".spr"
@@ -51,9 +51,6 @@ end
 ------------------------------------
 -- Registration
 ------------------------------------
-
-goldsrc_add_class("cycler", function(ent, obj)
-    return Cycler:new(ent, obj)
-end)
+GoldsrcEntity.register("cycler", Cycler)
 
 return Cycler

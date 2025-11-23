@@ -21,9 +21,6 @@ end
 ------------------------------------
 -- Registration
 ------------------------------------
-
-goldsrc_add_class("cycler_sprite", function(ent, obj)
-    return CyclerSprite:new(ent, obj)
-end)
+GoldsrcEntity.register("cycler_sprite", CyclerSprite)
 
 return CyclerSprite

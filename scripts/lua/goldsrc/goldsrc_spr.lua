@@ -3,6 +3,8 @@ GoldsrcSpr.__index = GoldsrcSpr
 
 local dt = 1/30
 
+local sObjToSpr = {}
+
 local TEX_FORMAT_SPR_NORMAL     = 0
 local TEX_FORMAT_SPR_ADDITIVE   = 1
 local TEX_FORMAT_SPR_INDEXALPHA = 2
@@ -66,7 +68,6 @@ function GoldsrcSpr.geo_path(model)
     return GoldsrcSpr.alter_path(model) .. "_geo"
 end
 
-
 function GoldsrcSpr:new(goldsrc_entity)
     local self = setmetatable({}, self)
 
@@ -79,6 +80,7 @@ function GoldsrcSpr:new(goldsrc_entity)
     self.sprite_data = nil
     self.frame_t = 0
     self.spr_animate = false
+    self.update_render = true
 
     -- set default rendercolor
     if ent.rendercolor and ent.rendercolor[1] == 0 and ent.rendercolor[2] == 0 and ent.rendercolor[3] == 0 then
@@ -115,6 +117,8 @@ function GoldsrcSpr:new(goldsrc_entity)
 
     self.spr_animate = ent and ent.framerate and self.sprite_data
     self:set_anim_state(0)
+
+    sObjToSpr[obj] = self
 
     return self
 end
@@ -157,42 +161,52 @@ end
 function g_goldsrc_spr(node, matStackIndex)
     local obj = geo_get_current_object()
 
-    local ent = gGoldsrcObjToEnt[obj]
-    if ent == nil then return end
-
-    local rendercolor = {255, 255, 255}
-    local renderamt = 255
-
-    if ent._class and ent._class.spr and ent._class.spr.render then
-        local render = ent._class.spr.render
-        if render.use_rendercolor and ent.rendercolor then
-            rendercolor = ent.rendercolor
-        end
-
-        if render.use_renderamt and ent.renderamt then
-            renderamt = ent.renderamt
-        end
-    end
+    local spr = sObjToSpr[obj]
+    if spr == nil then return end
 
     local gfx_name = "goldsrc_spr_dl_" .. get_obj_identifier(obj)
     local gfx = gfx_get_from_name(gfx_name)
+
     if gfx == nil then
         gfx = gfx_create(gfx_name, 2)
     end
 
-    -- Change the env color
-    gfx_set_command(gfx_get_command(gfx, 0), "gsDPSetEnvColor(%i, %i, %i, %i)", rendercolor[1], rendercolor[2], rendercolor[3], renderamt)
-    gfx_set_command(gfx_get_command(gfx, 1), "gsSPEndDisplayList()")
+    if spr.update_render then
+        local ent = spr.ent
+        local rendercolor = {255, 255, 255}
+        local renderamt = 255
+
+        if spr.render then
+            local render = spr.render
+            if render.use_rendercolor and ent.rendercolor then
+                rendercolor = ent.rendercolor
+            end
+
+            if render.use_renderamt and ent.renderamt then
+                renderamt = ent.renderamt
+            end
+        end
+
+        -- Change the env color
+        gfx_set_command(gfx_get_command(gfx, 0), "gsDPSetEnvColor(%i, %i, %i, %i)", rendercolor[1], rendercolor[2], rendercolor[3], renderamt)
+        gfx_set_command(gfx_get_command(gfx, 1), "gsSPEndDisplayList()")
+
+        spr.update_render = false
+    end
 
     -- Update the graph node display list
-    cast_graph_node(node.next).displayList = gfx
-    cast_graph_node(node.next.next).displayList = gfx
-    cast_graph_node(node.next.next.next).displayList = gfx
+    local current = node.next
+    for i = 1, 3 do
+        cast_graph_node(current).displayList = gfx
+        current = current.next
+    end
+
 end
 
 --- @param obj Object
 --- Delete allocated gfx and vtx for this object.
 local function on_object_unload(obj)
+    sObjToSpr[obj] = nil
     local gfx = gfx_get_from_name("goldsrc_spr_dl_" .. get_obj_identifier(obj))
     if gfx then gfx_delete(gfx) end
 end

@@ -149,9 +149,6 @@ end
 -------------------------------------------------
 -- Registration
 -------------------------------------------------
-
-goldsrc_add_class("func_breakable", function(ent, obj)
-    return FuncBreakable:new(ent, obj)
-end)
+GoldsrcEntity.register("func_breakable", FuncBreakable)
 
 return FuncBreakable

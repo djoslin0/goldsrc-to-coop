@@ -97,9 +97,6 @@ end
 ------------------------------------
 -- Registration
 ------------------------------------
-
-goldsrc_add_class("trigger_multiple", function(ent, obj)
-    return TriggerMultiple:new(ent, obj)
-end)
+GoldsrcEntity.register("trigger_multiple", TriggerMultiple)
 
 return TriggerMultiple

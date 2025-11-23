@@ -2,6 +2,7 @@
 -- trigger_multiple --
 ----------------------
 
+local GoldsrcEntity = require("goldsrc_entity")
 local TriggerMultiple = require("trigger_multiple")
 
 local TriggerOnce = {}
@@ -21,9 +22,6 @@ end
 ------------------------------------
 -- Registration
 ------------------------------------
-
-goldsrc_add_class("trigger_once", function(ent, obj)
-    return TriggerOnce:new(ent, obj)
-end)
+GoldsrcEntity.register("trigger_once", TriggerOnce)
 
 return TriggerOnce
