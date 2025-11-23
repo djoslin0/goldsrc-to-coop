@@ -19,7 +19,8 @@ trigger_names = [
 invisible_mat_names = [
     "null_f3d",
     "sky_f3d",
-    "sky_LM"
+    "sky_LM",
+    "aaatrigger"
 ]
 
 
@@ -73,10 +74,16 @@ def set_fast64_material_render_mode_glow(mat, alpha):
     update_material_cache(mat)
 
 
-def set_fast64_material_render_mode_solid(mat, cull_back = True):
+def set_fast64_material_render_mode_solid(mat, cull_back = True, boost_alpha = False):
     mat.f3d_mat.draw_layer.sm64 = '4'
     mat.f3d_mat.combiner1.D_alpha = 'TEXEL0'
     mat.f3d_mat.rdp_settings.g_cull_back = cull_back
+
+    if boost_alpha:
+        mat.f3d_mat.combiner1.A_alpha = '1'
+        mat.f3d_mat.combiner1.C_alpha = 'PRIMITIVE'
+        mat.f3d_mat.prim_color = (1, 1, 1, 0.15)
+
     update_material_cache(mat)
 
 
@@ -86,6 +93,11 @@ def set_fast64_material_render_mode_additive(mat, alpha):
     mat.f3d_mat.rdp_settings.g_cull_back = False
     update_material_cache(mat)
 
+def set_fast64_material_render_mode_use_alpha_channel(mat, cull_back = True):
+    mat.f3d_mat.draw_layer.sm64 = '5'
+    mat.f3d_mat.combiner1.D_alpha = 'TEXEL0'
+    mat.f3d_mat.rdp_settings.g_cull_back = cull_back
+    update_material_cache(mat)
 
 def set_faces_smooth_for_material(obj, mat):
     if obj.type != 'MESH':

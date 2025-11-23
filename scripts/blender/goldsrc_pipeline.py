@@ -9,6 +9,7 @@ import coop_lightmap
 import set_fast64_stuff
 import export_level
 import convert_mdls
+import convert_sprs
 
 def main():
     # Parse command-line arguments
@@ -44,6 +45,7 @@ def main():
     export_level.stage_export_level(5, folder_path, level_name, append_file_path)
 
     convert_mdls.stage_convert_mdls(folder_path)
+    convert_sprs.stage_convert_sprs(folder_path, scalar)
 
 if __name__ == "__main__":
     main()

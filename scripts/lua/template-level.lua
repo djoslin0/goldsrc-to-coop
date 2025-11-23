@@ -14,10 +14,12 @@ LEVEL_$LEVELUNAME = level_register("level_$LEVELNAME_entry", COURSE_BOB, "$LEVEL
 goldsrc.levels[LEVEL_$LEVELUNAME] = {
     entities = {
 $ENTITIES
-    }
+    },
+    sprites = {}
 }
 
 local entities = goldsrc.levels[LEVEL_$LEVELUNAME].entities
+local sprites =  goldsrc.levels[LEVEL_$LEVELUNAME].sprites
 
 ----------------------
 -- Register objects --
@@ -30,6 +32,12 @@ $REGISTER_OBJECTS
 --------------------
 
 $AABBS
+
+-----------------
+-- Sprite Data --
+-----------------
+
+$SPRITE_DATA
 
 ------------------------
 

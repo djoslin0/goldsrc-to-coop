@@ -2,6 +2,7 @@ import os
 import sys
 import re
 import shutil
+import json
 from goldsrc_parse_ents import convert_entities_to_lua
 
 # Load the template from template-main.lua
@@ -69,7 +70,7 @@ def process_textures(path, missing_png_path):
     # Collect PNGs from actors (recursive)
     if os.path.exists(actors_dir):
         for root, dirs, files in os.walk(actors_dir):
-            dirs[:] = [d for d in dirs if not d.endswith('_mdl')]
+            dirs[:] = [d for d in dirs if not d.endswith('_mdl') and not d.endswith("_spr")]
             for file in files:
                 if file.lower().endswith('.png'):
                     png_files.append(os.path.join(root, file))
@@ -82,6 +83,29 @@ def process_textures(path, missing_png_path):
 
         # Replace original with copy of missing_png_path
         shutil.copy2(missing_png_path, png_path)
+
+def collect_sprite_data(levelname):
+
+    src_sprites_folder = os.path.join("output", levelname, "sprites")
+
+    sprite_data = {}
+
+    for sprite_folder in os.listdir(src_sprites_folder):
+        sprite_path = os.path.join(src_sprites_folder, sprite_folder)
+        if os.path.isdir(sprite_path):
+            with open(sprite_path + "/sprite.json", 'r') as file:
+                data = json.load(file)
+            sprite_data[sprite_folder] = data['header']
+
+    output = ''
+
+    for k, v in sprite_data.items():
+        output += f'sprites["{k}"]' + ' = {\n'
+        for key, value in v.items():
+            output += f'    ["{key}"] = {value},\n'
+        output += '}\n'
+
+    return output
 
 def main():
     if len(sys.argv) < 4:
@@ -139,7 +163,8 @@ def main():
         "$ENTITIES":         entities_lua,
         "$REGISTER_OBJECTS": collect_register_objects(output_dir),
         "$AABBS":            get_aabbs(os.path.join("output", levelname, "aabb.lua")),
-        "$CLASS_REQUIRES":   '\n'.join(class_requires)
+        "$CLASS_REQUIRES":   '\n'.join(class_requires),
+        "$SPRITE_DATA":      collect_sprite_data(levelname),
     }
 
     # Generate lua files from templates

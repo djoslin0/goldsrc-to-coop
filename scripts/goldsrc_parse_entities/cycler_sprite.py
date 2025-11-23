@@ -3,6 +3,7 @@ from . import *
 parse_classes['cycler_sprite'] = {
     "classname": parse_string,
     "model": parse_string,
+    "framerate": parse_float,
 
     "targetname": parse_string,
     "angles": parse_angles,
@@ -14,6 +15,8 @@ parse_classes['cycler_sprite'] = {
     "rendermode": parse_int,
     "renderamt": parse_int,
     "rendercolor": parse_color,
+
+    "scale": parse_float,
 
     # Exporting settings
     "_export_geo": False,

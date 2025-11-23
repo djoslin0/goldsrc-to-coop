@@ -18,9 +18,6 @@ function CyclerSprite:new(ent, obj)
     return self
 end
 
-function CyclerSprite:update()
-end
-
 ------------------------------------
 -- Registration
 ------------------------------------
