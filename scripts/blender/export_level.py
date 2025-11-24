@@ -60,7 +60,7 @@ def export_object(objects_collection, area_obj, actors_folder, level_name, blend
     bpy.ops.object.select_all(action='DESELECT')
     blender_object.select_set(True)
     bpy.ops.object.origin_set(type='ORIGIN_CURSOR', center='MEDIAN')
-    
+
     # Move 3D cursor to entity location for origin_set
     bpy.context.scene.cursor.location = entity.location
     bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
@@ -327,10 +327,10 @@ def calculate_aabb_lua():
         if obj.name.startswith("M_"):
             # Parse entity index from the object name
             entity_index = int(obj.name.split('#', 1)[0].rsplit('_', 1)[-1])
-            
+
             # Calculate world bounding box by transforming each corner
             aabb_world = [obj.matrix_world @ mathutils.Vector(corner) for corner in obj.bound_box]
-            
+
             # Sm64 Scalar
             sm64_scalar = 100
 
@@ -341,7 +341,7 @@ def calculate_aabb_lua():
             max_x = round(max(v.x for v in aabb_world) * sm64_scalar)
             max_y = round(max(v.y for v in aabb_world) * sm64_scalar)
             max_z = round(max(v.z for v in aabb_world) * sm64_scalar)
-            
+
             output += f'entities[{entity_index+1}]._aabb = {{ min = {{ {min_x}, {min_z}, {-max_y} }}, max = {{ {max_x}, {max_z}, {-min_y} }} }}\n'
 
     return output

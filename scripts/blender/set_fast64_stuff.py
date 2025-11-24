@@ -173,6 +173,7 @@ def apply_rendermode_to_objects():
             continue
 
         is_water = 'brush_type' in obj and obj['brush_type'] == "func_water"
+        is_water = is_water or obj.name.endswith('#worldspawn_liquid')
 
         if entity_rendermode == 0 and not is_water:
             continue
