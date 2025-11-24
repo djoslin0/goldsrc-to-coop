@@ -23,12 +23,13 @@ if gGoldsrc == nil then
     }
 end
 
+local dt = 1/30
+
 -- These variables must be cleared on level init
 local sAttackCache = {}
 local sCachedLevelNum = -1
 local sEventQueue = {}
 local sGoldsrcTime = 0
-
 ---------------
 -- Utilities --
 ---------------
@@ -105,7 +106,17 @@ function goldsrc_apply_damage(target, dmg, damager)
     if target == nil then return end
 
     if target.marioObj ~= nil then
-        target.hurtCounter = target.hurtCounter + dmg
+        local scaled_damage = (0x880 - 0xFF) * (dmg / 100.0) * dt
+        if scaled_damage < 1 and dmg > 0 then
+            scaled_damage = 1
+        end
+        target.health = target.health - scaled_damage
+        if target.health < 0xFF then
+            target.health = 0xFF
+        end
+        if target.health > 0x880 then
+            target.health = 0x880
+        end
         return
     end
 
