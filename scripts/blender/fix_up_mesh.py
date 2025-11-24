@@ -196,7 +196,7 @@ def split_liquid_faces(obj):
         bpy.types.Object or None: The new object containing the upward-facing liquid faces, or None if no liquid faces.
     """
     if obj.type != 'MESH':
-        return None, None
+        return None
 
     me = obj.data
     bm = bmesh.new()
@@ -216,7 +216,7 @@ def split_liquid_faces(obj):
 
     if not liquid_indices:
         bm.free()
-        return None, None
+        return None
 
     # Process Obj Liquid (A)
     bm_liquid = bm.copy()
@@ -348,6 +348,9 @@ def delete_non_upward_faces(obj):
     Args:
         obj (bpy.types.Object): The Blender mesh object to process.
     """
+    if not obj:
+        return
+
     if obj.type != 'MESH':
         return
 
@@ -509,10 +512,7 @@ def stage_fix_up_mesh(num, folder):
     if target_obj:
         liquid = split_liquid_faces(target_obj)
         delete_non_upward_faces(liquid)
-        obj_a, obj_b = split_backfaces(target_obj)
-        if obj_a and obj_b:
-            print(f"Split backfaces for {target_obj.name}: created {obj_a.name} and {obj_b.name}")
-    bpy.ops.wm.save_mainfile(filepath=os.path.join(folder, f"early-fix-up-mesh.blend"))
+        split_backfaces(target_obj)
 
     process_objects()
     bpy.ops.wm.save_mainfile(filepath=os.path.join(folder, f"{num}-fix-up-mesh.blend"))
