@@ -116,34 +116,7 @@ def process_objects():
                     break
     print(f"Total vertices created across scene: {total_created}")
 
-# -----------------------
-# Main script entry
-# -----------------------
 
-# Get .blend file from command-line arguments after "--"
-argv = sys.argv
-if "--" in argv:
-    argv = argv[argv.index("--") + 1:]  # keep argv as a list
-else:
-    argv = []
-
-if len(argv) < 1:
-    print("Usage: blender --background --python fix-up-mesh.py -- BLEND_FILE")
-    sys.exit(1)
-
-blend_file_path = argv[0]
-if not os.path.isfile(blend_file_path):
-    print(f"Error: .blend file does not exist: {blend_file_path}")
-    sys.exit(1)
-
-# Open the .blend file
-bpy.ops.wm.open_mainfile(filepath=blend_file_path)
-
-# Run the UV combine logic
-process_objects()
-
-# Save to a new file in the same folder
-folder = os.path.dirname(blend_file_path)
-save_path = os.path.join(folder, "3-fix-up-mesh.blend")
-bpy.ops.wm.save_mainfile(filepath=save_path)
-print(f"Blender file saved: {save_path}")
+def stage_fix_up_mesh(num, folder):
+    process_objects()
+    bpy.ops.wm.save_mainfile(filepath=os.path.join(folder, f"{num}-fix-up-mesh.blend"))

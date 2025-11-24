@@ -10,6 +10,7 @@ import set_fast64_stuff
 import export_level
 import convert_mdls
 import convert_sprs
+import fix_up_mesh
 
 def main():
     # Parse command-line arguments
@@ -40,9 +41,10 @@ def main():
     # perform this stage
     import_all_objs.stage_import_all_objs(1, folder_path, scalar)
     combine_into_uv2.stage_combine_uv2(2, folder_path)
-    coop_lightmap.stage_coop_lightmap(3, folder_path)
-    set_fast64_stuff.stage_set_fast64_stuff(4, folder_path)
-    export_level.stage_export_level(5, folder_path, level_name, append_file_path)
+    fix_up_mesh.stage_fix_up_mesh(3, folder_path)
+    coop_lightmap.stage_coop_lightmap(4, folder_path)
+    set_fast64_stuff.stage_set_fast64_stuff(5, folder_path)
+    export_level.stage_export_level(6, folder_path, level_name, append_file_path)
 
     convert_mdls.stage_convert_mdls(folder_path)
     convert_sprs.stage_convert_sprs(folder_path, scalar)
