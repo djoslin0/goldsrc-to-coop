@@ -59,7 +59,7 @@ function TriggerTeleport:update()
     local m = gMarioStates[0]
 
     -- Check if player is in the teleport area and cooldown is reset
-    if goldsrc_intersects_aabb(m.pos, 80, self.ent) and (sTeleporteeCooldowns[m] or 0) <= 0 then
+    if goldsrc_intersects_aabb(m.pos, 80, self.ent._aabb) and (sTeleporteeCooldowns[m] or 0) <= 0 then
         self:teleport_entity(m)
         sTeleporteeCooldowns[m] = 1
     end

@@ -47,5 +47,5 @@ parse_classes['func_water'] = {
     # Exporting settings
     "_export_geo": True,
     "_export_col": False,
-    "_extra_sm64_class": "Water Box"
+    "_cull_non_up": True,
 }

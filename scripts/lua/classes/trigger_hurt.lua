@@ -101,7 +101,7 @@ function TriggerHurt:update()
     end
 
     -- Check player
-    if goldsrc_intersects_aabb(m.pos, 80, self.ent) then
+    if goldsrc_intersects_aabb(m.pos, 80, self.ent._aabb) then
         self:hurt_target(m)
     end
 

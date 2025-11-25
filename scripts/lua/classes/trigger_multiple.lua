@@ -89,7 +89,7 @@ function TriggerMultiple:update()
     local m = gMarioStates[0]
 
     -- AABB-based trigger check (same pattern as trigger_hurt)
-    if goldsrc_intersects_aabb(m.pos, 80, ent) and self:touch_allowed(m) then
+    if goldsrc_intersects_aabb(m.pos, 80, ent._aabb) and self:touch_allowed(m) then
         self:fire(m)
     end
 end

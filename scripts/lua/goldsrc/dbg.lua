@@ -405,22 +405,22 @@ function Dbg.aabb(min, max, color, thickness)
     local c111 = { x2, y2, z2 }
 
     -- bottom rectangle
-    dbg.line(c000, c100, color, thickness)
-    dbg.line(c100, c110, color, thickness)
-    dbg.line(c110, c010, color, thickness)
-    dbg.line(c010, c000, color, thickness)
+    Dbg.line(c000, c100, color, thickness)
+    Dbg.line(c100, c110, color, thickness)
+    Dbg.line(c110, c010, color, thickness)
+    Dbg.line(c010, c000, color, thickness)
 
     -- top rectangle
-    dbg.line(c001, c101, color, thickness)
-    dbg.line(c101, c111, color, thickness)
-    dbg.line(c111, c011, color, thickness)
-    dbg.line(c011, c001, color, thickness)
+    Dbg.line(c001, c101, color, thickness)
+    Dbg.line(c101, c111, color, thickness)
+    Dbg.line(c111, c011, color, thickness)
+    Dbg.line(c011, c001, color, thickness)
 
     -- vertical edges
-    dbg.line(c000, c001, color, thickness)
-    dbg.line(c100, c101, color, thickness)
-    dbg.line(c010, c011, color, thickness)
-    dbg.line(c110, c111, color, thickness)
+    Dbg.line(c000, c001, color, thickness)
+    Dbg.line(c100, c101, color, thickness)
+    Dbg.line(c010, c011, color, thickness)
+    Dbg.line(c110, c111, color, thickness)
 end
 
 function Dbg.text(string, pos, color, scale)

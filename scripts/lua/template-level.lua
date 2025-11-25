@@ -15,11 +15,15 @@ goldsrc.levels[LEVEL_$LEVELUNAME] = {
     entities = {
 $ENTITIES
     },
-    sprites = {}
+    sprites = {},
+    water_aabbs = {
+$WATER_AABBS
+    },
 }
 
 local entities = goldsrc.levels[LEVEL_$LEVELUNAME].entities
 local sprites =  goldsrc.levels[LEVEL_$LEVELUNAME].sprites
+local water_aabbs = goldsrc.levels[LEVEL_$LEVELUNAME].water_aabbs
 
 ----------------------
 -- Register objects --
@@ -31,7 +35,8 @@ $REGISTER_OBJECTS
 -- Remember AABBs --
 --------------------
 
-$AABBS
+$ENT_AABBS
+
 
 -----------------
 -- Sprite Data --

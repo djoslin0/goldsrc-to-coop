@@ -36,6 +36,13 @@ local sAttackCache = {}
 local sCachedLevelNum = -1
 local sEventQueue = {}
 local sGoldsrcTime = 0
+
+--------------
+-- Localize --
+--------------
+local max = math.max
+local min = math.min
+
 ---------------
 -- Utilities --
 ---------------
@@ -167,14 +174,14 @@ function goldsrc_message(message)
     djui_chat_message_create(message)
 end
 
-function goldsrc_intersects_aabb(pos, radius, ent)
-    local min = ent._aabb.min
-    local max = ent._aabb.max
+function goldsrc_intersects_aabb(pos, radius, aabb)
+    local aabb_min = aabb.min
+    local aabb_max = aabb.max
 
     -- Find the closest point on the AABB to the sphere center
-    local closest_x = math.max(min[1], math.min(pos.x, max[1]))
-    local closest_y = math.max(min[2], math.min(pos.y, max[2]))
-    local closest_z = math.max(min[3], math.min(pos.z, max[3]))
+    local closest_x = max(aabb_min[1], min(pos.x, aabb_max[1]))
+    local closest_y = max(aabb_min[2], min(pos.y, aabb_max[2]))
+    local closest_z = max(aabb_min[3], min(pos.z, aabb_max[3]))
 
     -- Compute squared distance from sphere center to closest point
     local dx = pos.x - closest_x
@@ -199,7 +206,7 @@ function goldsrc_apply_radius_damage(x, y, z, radius, damage)
 
             if dist <= radius then
                 local dmgToApply = damage * (1 - dist / radius)
-                dmgToApply = math.max(0, dmgToApply)
+                dmgToApply = max(0, dmgToApply)
                 class:apply_damage(dmgToApply)
 
                 -- TODO: push?
@@ -310,11 +317,53 @@ end
 -- Hooks --
 -----------
 
+local function update_water_level(m)
+    local pos = m.pos
+    local px = pos.x
+    local py = pos.y
+    local pz = pos.z
+
+    local radiusSq = 80*80
+
+    local level_data = gGoldsrc.levels[gNetworkPlayers[0].currLevelNum]
+    if not level_data then return end
+
+    local water_aabbs = gGoldsrc.levels[gNetworkPlayers[0].currLevelNum].water_aabbs
+    local water_level = gLevelValues.floorLowerLimit
+
+    for i = 1, #water_aabbs do
+        local aabb = water_aabbs[i]
+        local minv = aabb.min
+        local maxv = aabb.max
+
+        local cx = (px < minv[1]) and minv[1] or (px > maxv[1] and maxv[1] or px)
+        local cy = (py < minv[2]) and minv[2] or (py > maxv[2] and maxv[2] or py)
+        local cz = (pz < minv[3]) and minv[3] or (pz > maxv[3] and maxv[3] or pz)
+
+        local dx = px - cx
+        local dy = py - cy
+        local dz = pz - cz
+
+        if dx*dx + dy*dy + dz*dz <= radiusSq then
+            local maxy = maxv[2]
+            if maxy > water_level then
+                water_level = maxy
+            end
+        end
+    end
+
+    set_water_level(0, water_level, false)
+end
+
+
 local function before_mario_update(m)
+    update_water_level(m)
+
     if m.playerIndex ~= 0 then
         return
     end
 
+    -- use key detection
     if m.controller.buttonPressed & B_BUTTON ~= 0 then
         -- figure out dir
         local yaw = m.faceAngle.y

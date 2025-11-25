@@ -48,9 +48,37 @@ def collect_register_objects(output_dir):
 
     return output
 
-def get_aabbs(path):
+
+def get_entity_aabbs(path):
     with open(path, 'r') as f:
         return f.read()
+
+
+def get_water_aabbs(path, bspguy_scale):
+    if not os.path.exists(path):
+        return ''
+
+    scalar = 100 / -bspguy_scale
+    output = ''
+    with open(path, 'r') as f:
+        water_aabbs = json.loads(f.read())
+
+    for entry in water_aabbs:
+        e_min = entry['mins']
+        e_max = entry['maxs']
+        n_min = [
+            e_min[0] * scalar,
+            e_min[2] * scalar,
+            e_max[1] * -scalar,
+        ]
+        n_max = [
+            e_max[0] * scalar,
+            e_max[2] * scalar,
+            e_min[1] * -scalar,
+        ]
+        output += f"        {{ min = {{ {n_min[0]}, {n_min[1]}, {n_min[2]} }}, max = {{ {n_max[0]}, {n_max[1]}, {n_max[2]} }} }},\n"
+    return output
+
 
 def process_textures(path, missing_png_path):
     levels_dir = os.path.join(path, 'levels')
@@ -169,7 +197,8 @@ def main():
         "$LEVELUNAME":       leveluname,
         "$ENTITIES":         entities_lua,
         "$REGISTER_OBJECTS": collect_register_objects(output_dir),
-        "$AABBS":            get_aabbs(os.path.join("output", levelname, "aabb.lua")),
+        "$ENT_AABBS":        get_entity_aabbs(os.path.join("output", levelname, "aabb.lua")),
+        "$WATER_AABBS":      get_water_aabbs(os.path.join("output", levelname, "leaves_-3.json"), bspguy_scale),
         "$CLASS_REQUIRES":   '\n'.join(class_requires),
         "$SPRITE_DATA":      collect_sprite_data(levelname),
     }
