@@ -36,6 +36,11 @@ SET "PYTHON_PATH=%~dp0\tools\blender-3.6.23-windows-x64\3.6\python\bin\python.ex
 SET "MAGICK_PATH=%~dp0\tools\imagemagick\magick.exe"
 SET SCALE=-25
 
+REM Override the scale for kz maps
+IF "%BSP_NAME:~0,3%"=="kz_" (
+    SET SCALE=-15
+)
+
 REM Check that important files exist
 IF NOT EXIST "%PROMPT_FOR_HL_DIR_PATH%" ECHO PROMPT_FOR_HL_DIR_PATH not found & PAUSE & EXIT /B
 IF NOT EXIST "%BSPGUY_PATH%" ECHO BSPGUY not found & PAUSE & EXIT /B

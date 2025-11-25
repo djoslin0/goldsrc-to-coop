@@ -471,24 +471,6 @@ def process_object(obj, phase):
     print(f"Processed {obj.name}, phase {phase}: {created} verts")
     return created
 
-def recalculate_outside(obj):
-    if not obj.name.startswith("M_"):
-        return
-
-    entity_index = int(obj.name.split('#', 1)[0].rsplit('_', 1)[-1])
-    if entity_index <= 0:
-        return
-
-    # Select and activate the object
-    bpy.ops.object.select_all(action='DESELECT')
-    obj.select_set(True)
-    bpy.context.view_layer.objects.active = obj
-
-    # Enter edit mode, recalculate normals outside, then exit edit mode
-    bpy.ops.object.mode_set(mode='EDIT')
-    bpy.ops.mesh.normals_make_consistent(inside=False)
-    bpy.ops.object.mode_set(mode='OBJECT')
-
 # -------------------------------
 # MAIN: process all mesh objects in the scene
 # -------------------------------
@@ -502,7 +484,6 @@ def process_objects():
                 total_created += created
                 if created == 0:
                     break
-            recalculate_outside(obj)
     print(f"Total vertices created across scene: {total_created}")
 
 

@@ -10,6 +10,12 @@ local GoldsrcGfxUtils = require("goldsrc_gfx_utils")
 ------------------------
 
 gLevelValues.fixCollisionBugs = 1
+gLevelValues.cellHeightLimit = 32760
+gLevelValues.floorLowerLimit = -32760
+gLevelValues.floorLowerLimitMisc = -32760
+gLevelValues.floorLowerLimitShadow = -32760
+gLevelValues.floorNormalMinY = 0.1
+gLevelValues.ceilNormalMaxY = -0.1
 
 ----------------------
 -- Create variables --
@@ -312,13 +318,14 @@ local function before_mario_update(m)
     if m.controller.buttonPressed & B_BUTTON ~= 0 then
         -- figure out dir
         local yaw = m.faceAngle.y
-        local dir_x = sins(yaw) * 300
+        local dir_dist = 80 * gGoldsrc.toSm64Scalar
+        local dir_x = sins(yaw) * dir_dist
         local dir_y = 120
-        local dir_z = coss(yaw) * 300
+        local dir_z = coss(yaw) * dir_dist
 
         -- raycast for user
         local ray = collision_find_surface_on_ray(m.pos.x, m.pos.y, m.pos.z, dir_x, dir_y, dir_z)
-        if ray.surface and ray.surface.object and vec3f_dist(ray.hitPos, m.pos) < 80 * gGoldsrc.toSm64Scalar then
+        if ray.surface and ray.surface.object then
             local obj = ray.surface.object
             if gGoldsrcObjToEnt[obj] ~= nil then
                 local ent = gGoldsrcObjToEnt[obj]

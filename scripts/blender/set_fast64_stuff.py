@@ -137,6 +137,18 @@ def apply_brush_types_to_objects():
             if brush_type in ignore_render_classes:
                 obj["ignore_render"] = True
 
+            # check for other flags
+            if obj_name.startswith("M_"):
+                try:
+                    entity_index = int(re.search(r'ENT_(\d+)#', obj_name).group(1))
+                    entity_obj = next((o for o in bpy.data.objects if o.name.startswith(f"{entity_index}#")), None)
+                    if entity_obj and entity_obj["zhlt_noclip"] and str(entity_obj["zhlt_noclip"]) == "1":
+                        obj["ignore_collision"] = True
+                    if entity_obj and entity_obj["zhlt_invisible"] and str(entity_obj["zhlt_invisible"]) == "1":
+                        obj["ignore_render"] = True
+                except Exception as ex:
+                    pass
+
         else:
             # No '#' found
             obj["brush_type"] = None
