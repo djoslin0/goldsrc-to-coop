@@ -9,7 +9,7 @@
 -- The door opens in the direction of the player's view
 
 local GoldsrcEntity = require("goldsrc_entity")
-local FuncDoor = require("func_door")  -- your FuncDoor class
+local FuncDoor = require("func_door")
 local dt = 1/30
 
 local FuncDoorRotating = {}
@@ -17,10 +17,10 @@ FuncDoorRotating.__index = FuncDoorRotating
 setmetatable(FuncDoorRotating, {__index = FuncDoor})
 
 -- Additional flags for func_door_rotating
-FuncDoor.Flags.REVERSE_DIR = 2      -- 1 << 1
-FuncDoor.Flags.ONE_WAY = 16         -- 1 << 4
-FuncDoor.Flags.X_AXIS = 64          -- 1 << 6
-FuncDoor.Flags.Y_AXIS = 128         -- 1 << 7
+FuncDoor.Flags.REVERSE_DIR = 1 << 1  -- 2
+FuncDoor.Flags.ONE_WAY     = 1 << 4  -- 16
+FuncDoor.Flags.X_AXIS      = 1 << 6  -- 64
+FuncDoor.Flags.Y_AXIS      = 1 << 7  -- 128
 
 -------------------------------------------------
 -- Constructor

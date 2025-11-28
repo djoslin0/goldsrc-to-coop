@@ -423,18 +423,27 @@ local function before_mario_update(m)
         local dir_y = 120
         local dir_z = coss(yaw) * dir_dist
 
-        -- raycast for user
-        local ray = collision_find_surface_on_ray(m.pos.x, m.pos.y, m.pos.z, dir_x, dir_y, dir_z)
-        if ray.surface and ray.surface.object then
-            local obj = ray.surface.object
-            if gGoldsrcObjToEnt[obj] ~= nil then
-                local ent = gGoldsrcObjToEnt[obj]
-                local class = ent._class
-                if class ~= nil and class.use ~= nil and class:use() then
-                    m.controller.buttonPressed = (m.controller.buttonPressed & ~B_BUTTON)
-                    play_sound(SOUND_MENU_CLICK_FILE_SELECT, gGlobalSoundSource)
+        -- raycast for user at multiple heights
+        local offsets = {75, 100, 50, 125}
+        local found_useable = false
+        for _, offset in ipairs(offsets) do
+            local ray = collision_find_surface_on_ray(m.pos.x, m.pos.y + offset, m.pos.z, dir_x, dir_y, dir_z)
+            if ray.surface and ray.surface.object then
+                local obj = ray.surface.object
+                if gGoldsrcObjToEnt[obj] ~= nil then
+                    local ent = gGoldsrcObjToEnt[obj]
+                    local class = ent._class
+                    if class ~= nil and class.use ~= nil and class:use() then
+                        found_useable = true
+                        break  -- found a useable object, no need to check other offsets
+                    end
                 end
             end
+        end
+
+        if found_useable then
+            m.controller.buttonPressed = (m.controller.buttonPressed & ~B_BUTTON)
+            play_sound(SOUND_MENU_CLICK_FILE_SELECT, gGlobalSoundSource)
         end
     end
 end

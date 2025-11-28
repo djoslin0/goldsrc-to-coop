@@ -17,6 +17,7 @@ template_files = [
 subclasses = {
     'trigger_once': [ 'trigger_multiple' ],
     'func_door_rotating': [ 'func_door' ],
+    'func_button': [ 'func_door' ],
     'cycler_sprite': [ 'cycler' ],
 }
 
