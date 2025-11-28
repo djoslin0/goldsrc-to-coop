@@ -317,24 +317,72 @@ end
 -- Hooks --
 -----------
 
+function hull_contains_point(point, hull)
+    for _, plane in ipairs(hull.planes) do
+        local n, d = plane.n, plane.d
+        local dist = n[1]*point[1] + n[2]*point[2] + n[3]*point[3] - d
+        if dist < 0 then
+            -- outside this plane
+            return false
+        end
+    end
+    return true
+end
+
+function hull_within_radius(point, hull, radius)
+    radius = radius or 0
+    for _, plane in ipairs(hull.planes) do
+        local n, d = plane.n, plane.d
+        local dist = n[1]*point[1] + n[2]*point[2] + n[3]*point[3] - d
+        if dist < -radius then
+            -- outside the hull by more than the radius
+            return false
+        end
+    end
+    return true
+end
+
+function hull_top_at(point, hull)
+    local x, z = point[1], point[3]
+    local top_y = hull.max[2]  -- start with AABB top
+
+    for _, plane in ipairs(hull.planes) do
+        local n, d = plane.n, plane.d
+
+        if math.abs(n[2]) > 0.01 then  -- any plane affecting Y
+            local y_plane = (d - n[1]*x - n[3]*z) / n[2]
+            if n[2] < 0 then
+                -- normal pointing down -> constrains top
+                if y_plane < top_y then
+                    top_y = y_plane
+                end
+            end
+        end
+    end
+
+    return top_y
+end
+
 local function update_water_level(m)
     local pos = m.pos
     local px = pos.x
     local py = pos.y
     local pz = pos.z
 
-    local radiusSq = 80*80
+    local radius = 40
+    local radiusSq = radius*radius
 
     local level_data = gGoldsrc.levels[gNetworkPlayers[0].currLevelNum]
     if not level_data then return end
 
-    local water_aabbs = gGoldsrc.levels[gNetworkPlayers[0].currLevelNum].water_aabbs
+    local water_hulls = gGoldsrc.levels[gNetworkPlayers[0].currLevelNum].water_hulls
     local water_level = gLevelValues.floorLowerLimit
 
-    for i = 1, #water_aabbs do
-        local aabb = water_aabbs[i]
-        local minv = aabb.min
-        local maxv = aabb.max
+    for i = 1, #water_hulls do
+        local hull = water_hulls[i]
+
+        local minv = hull.min
+        local maxv = hull.max
 
         local cx = (px < minv[1]) and minv[1] or (px > maxv[1] and maxv[1] or px)
         local cy = (py < minv[2]) and minv[2] or (py > maxv[2] and maxv[2] or py)
@@ -345,9 +393,12 @@ local function update_water_level(m)
         local dz = pz - cz
 
         if dx*dx + dy*dy + dz*dz <= radiusSq then
-            local maxy = maxv[2]
-            if maxy > water_level then
-                water_level = maxy
+            if hull_within_radius({px, py, pz}, hull, radius) then
+                h = hull_top_at({px, py, pz}, hull)
+
+                if h > water_level then
+                    water_level = h
+                end
             end
         end
     end
