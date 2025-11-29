@@ -8,6 +8,7 @@
 -- func_breakables can get crushed by other brushes
 
 local GoldsrcEntity = require("goldsrc_entity")
+local GoldsrcFx = require("goldsrc_fx")
 
 local FuncBreakable = {}
 FuncBreakable.__index = FuncBreakable
@@ -35,7 +36,7 @@ end
 
 function FuncBreakable:spawn_gibs()
     -- TODO: spawn pieces based on material type
-    goldsrc_spawn_triangle_break_particles(self.obj, 30, E_MODEL_DIRT_ANIMATION, 3.0, 4)
+    GoldsrcFx.spawn_triangle_break_particles(self.obj, 30, E_MODEL_DIRT_ANIMATION, 3.0, 4)
 end
 
 function FuncBreakable:play_break_sound()

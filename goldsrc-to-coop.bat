@@ -52,6 +52,9 @@ REM Override the scale for kz maps
 IF "%BSP_NAME:~0,3%"=="kz_" (
     SET SCALE=-15
 )
+IF "%BSP_NAME:~0,4%"=="mls_" (
+    SET SCALE=-15
+)
 
 REM Output directory
 SET "OUT_DIR=%~dp0\output\%BSP_NAME%"

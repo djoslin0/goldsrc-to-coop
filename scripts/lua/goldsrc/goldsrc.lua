@@ -4,6 +4,7 @@
 
 require('bhv_goldsrc_entity')
 local GoldsrcGfxUtils = require("goldsrc_gfx_utils")
+local GoldsrcHull = require('goldsrc_hull')
 
 ------------------------
 -- Set coop constants --
@@ -25,6 +26,7 @@ if gGoldsrc == nil then
     gGoldsrc = {
         classes = {},
         levels = {},
+        hooks = {},
         toSm64Scalar = 100/25,
     }
 end
@@ -144,6 +146,22 @@ function goldsrc_fire_target(target_name, activator, caller, use_type, value, de
     local targets = goldsrc_get_entities_from_target_name(target_name)
     if not targets then return end
 
+    -- Check hooks if they exist
+    local hooks = gGoldsrc.hooks and gGoldsrc.hooks['fire_target']
+    if hooks then
+        local hook_reject = false
+        for _, hook in ipairs(hooks) do
+            if not hook(target_name, activator, caller, use_type, value, delay) then
+                hook_reject = true
+            end
+        end
+        if hook_reject then
+            -- One or more hooks rejected the firing
+            return
+        end
+    end
+
+    -- Proceed with firing targets
     for _, target in ipairs(targets) do
         if target and target._class and target._class.trigger then
             goldsrc_queue_event(delay, function()
@@ -280,88 +298,38 @@ function goldsrc_is_attacking_obj(m, obj)
     return attacking
 end
 
--------------
--- Effects --
--------------
-
-function goldsrc_spawn_triangle_break_particles(obj, numTris, triModel, triSize, triAnimState)
-    for i = 1, numTris do
-        local triangle = spawn_non_sync_object(id_bhvBreakBoxTriangle, triModel, obj.oPosX, obj.oPosY, obj.oPosZ, nil)
-        if triangle == nil then
-            goto continue
-        end
-
-        triangle.oAnimState = triAnimState
-        triangle.oPosY = triangle.oPosY + 100.0
-        triangle.oMoveAngleYaw = random_u16()
-        triangle.oFaceAngleYaw = triangle.oMoveAngleYaw
-        triangle.oFaceAnglePitch = random_u16()
-        triangle.oVelY = random_f32_around_zero(50.0)
-
-        if triModel == 138 or triModel == 56 then
-            triangle.oAngleVelPitch = 0xF00
-            triangle.oAngleVelYaw = 0x500
-            triangle.oForwardVel = 30.0
-        else
-            triangle.oAngleVelPitch = 0x80 * (math.floor(random_float() + 50.0))
-            triangle.oForwardVel = 30.0
-        end
-
-        obj_scale(triangle, triSize)
-
-        ::continue::
+function goldsrc_hook_fire_target(func)
+    -- Ensure hooks table exists
+    if not gGoldsrc.hooks then
+        gGoldsrc.hooks = {}
     end
+
+    -- Ensure fire_target hooks array exists
+    if not gGoldsrc.hooks['fire_target'] then
+        gGoldsrc.hooks['fire_target'] = {}
+    end
+
+    -- Add the hook function
+    table.insert(gGoldsrc.hooks['fire_target'], func)
+end
+
+function goldsrc_get_level_entities(levelnum)
+    if not levelnum then
+        levelnum = gNetworkPlayers[0].currLevelNum
+    end
+    if not gGoldsrc.levels[levelnum] then
+        return {}
+    end
+
+    local entities = gGoldsrc.levels[levelnum].entities
+    if not entities then return {} end
+
+    return entities
 end
 
 -----------
 -- Hooks --
 -----------
-
-function hull_contains_point(point, hull)
-    for _, plane in ipairs(hull.planes) do
-        local n, d = plane.n, plane.d
-        local dist = n[1]*point[1] + n[2]*point[2] + n[3]*point[3] - d
-        if dist < 0 then
-            -- outside this plane
-            return false
-        end
-    end
-    return true
-end
-
-function hull_within_radius(point, hull, radius)
-    radius = radius or 0
-    for _, plane in ipairs(hull.planes) do
-        local n, d = plane.n, plane.d
-        local dist = n[1]*point[1] + n[2]*point[2] + n[3]*point[3] - d
-        if dist < -radius then
-            -- outside the hull by more than the radius
-            return false
-        end
-    end
-    return true
-end
-
-function hull_top_at(point, hull)
-    local x, z = point[1], point[3]
-    local top_y = hull.max[2]  -- start with AABB top
-
-    for _, plane in ipairs(hull.planes) do
-        local n, d = plane.n, plane.d
-
-        if math.abs(n[2]) > 0.01 then  -- any plane affecting Y
-            local y_plane = (d - n[1]*x - n[3]*z) / n[2]
-            if n[2] < 0 then
-                -- normal pointing down -> constrains top
-                if y_plane < top_y then
-                    top_y = y_plane
-                end
-            end
-        end
-    end
-
-    return top_y
-end
 
 local function update_water_level(m)
     local pos = m.pos
@@ -393,8 +361,8 @@ local function update_water_level(m)
         local dz = pz - cz
 
         if dx*dx + dy*dy + dz*dz <= radiusSq then
-            if hull_within_radius({px, py, pz}, hull, radius) then
-                h = hull_top_at({px, py, pz}, hull)
+            if GoldsrcHull.within_radius({px, py, pz}, hull, radius) then
+                h = GoldsrcHull.top_at({px, py, pz}, hull)
 
                 if h > water_level then
                     water_level = h
@@ -504,6 +472,13 @@ local function on_level_init()
 end
 
 hook_event(HOOK_ON_LEVEL_INIT, on_level_init)
+
+-------------
+
+_G.Goldsrc = {
+    hook_fire_target = goldsrc_hook_fire_target,
+    get_level_entities = goldsrc_get_level_entities,
+}
 
 -------------
 
