@@ -2,7 +2,7 @@
 -- func_ladder   --
 -------------------
 
-local GoldsrcEntity = require("goldsrc_entity")
+local GoldsrcEntity = require("/goldsrc/goldsrc_entity")
 
 local FuncLadder = {}
 FuncLadder.__index = FuncLadder

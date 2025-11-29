@@ -2,7 +2,7 @@
 -- info_teleport_destination --
 -------------------------------
 
-local GoldsrcEntity = require("goldsrc_entity")
+local GoldsrcEntity = require("/goldsrc/goldsrc_entity")
 
 local InfoTeleportDestination = {}
 InfoTeleportDestination.__index = InfoTeleportDestination

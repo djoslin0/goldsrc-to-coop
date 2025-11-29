@@ -2,8 +2,8 @@
 -- cycler_sprite --
 -------------------
 
-local GoldsrcEntity = require("goldsrc_entity")
-local Cycler = require("cycler")
+local GoldsrcEntity = require("/goldsrc/goldsrc_entity")
+local Cycler = require("/goldsrc/cycler")
 
 local CyclerSprite = {}
 CyclerSprite.__index = CyclerSprite

@@ -2,7 +2,7 @@
 -- multi_manager --
 -------------------
 
-local GoldsrcEntity = require("goldsrc_entity")
+local GoldsrcEntity = require("/goldsrc/goldsrc_entity")
 
 local MultiManager = {}
 MultiManager.__index = MultiManager

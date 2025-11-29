@@ -4,7 +4,7 @@
 
 -- TODO: should we implement this fully? idk -- water works so different from goldsrc
 
-local GoldsrcEntity = require("goldsrc_entity")
+local GoldsrcEntity = require("/goldsrc/goldsrc_entity")
 
 local FuncWater = {}
 FuncWater.__index = FuncWater

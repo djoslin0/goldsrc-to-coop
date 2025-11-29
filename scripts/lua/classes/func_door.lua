@@ -7,7 +7,7 @@
 -- Damage inflicted when blocked (dmg) - How much damage the player receives if he gets stuck between the door and something solid.
 -- Players blocking a door should cause it to go back
 
-local GoldsrcEntity = require("goldsrc_entity")
+local GoldsrcEntity = require("/goldsrc/goldsrc_entity")
 
 local FuncDoor = {}
 FuncDoor.__index = FuncDoor

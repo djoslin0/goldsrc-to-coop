@@ -2,8 +2,8 @@
 -- env_sprite --
 ----------------
 
-local GoldsrcEntity = require("goldsrc_entity")
-local GoldsrcSpr = require("goldsrc_spr")
+local GoldsrcEntity = require("/goldsrc/goldsrc_entity")
+local GoldsrcSpr = require("/goldsrc/goldsrc_spr")
 
 local EnvSprite = {}
 EnvSprite.__index = EnvSprite

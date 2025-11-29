@@ -2,7 +2,7 @@
 -- func_button  --
 ------------------
 
-local GoldsrcEntity = require("goldsrc_entity")
+local GoldsrcEntity = require("/goldsrc/goldsrc_entity")
 
 local FuncButton = {}
 FuncButton.__index = FuncButton

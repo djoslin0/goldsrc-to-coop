@@ -7,8 +7,8 @@
 -- fix up explosion
 -- func_breakables can get crushed by other brushes
 
-local GoldsrcEntity = require("goldsrc_entity")
-local GoldsrcFx = require("goldsrc_fx")
+local GoldsrcEntity = require("/goldsrc/goldsrc_entity")
+local GoldsrcFx = require("/goldsrc/goldsrc_fx")
 
 local FuncBreakable = {}
 FuncBreakable.__index = FuncBreakable

@@ -2,9 +2,9 @@
 -- Requires --
 --------------
 
-require('bhv_goldsrc_entity')
-local GoldsrcGfxUtils = require("goldsrc_gfx_utils")
-local GoldsrcHull = require('goldsrc_hull')
+require('/goldsrc/bhv_goldsrc_entity')
+local GoldsrcGfxUtils = require("/goldsrc/goldsrc_gfx_utils")
+local GoldsrcHull = require('/goldsrc/goldsrc_hull')
 
 ------------------------
 -- Set coop constants --

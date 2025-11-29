@@ -2,8 +2,8 @@
 -- cycler --
 ------------
 
-local GoldsrcEntity = require("goldsrc_entity")
-local GoldsrcSpr = require("goldsrc_spr")
+local GoldsrcEntity = require("/goldsrc/goldsrc_entity")
+local GoldsrcSpr = require("/goldsrc/goldsrc_spr")
 
 local Cycler = {}
 Cycler.__index = Cycler

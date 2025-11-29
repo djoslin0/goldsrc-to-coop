@@ -8,8 +8,8 @@
 -- Players blocking a door should cause it to go back
 -- The door opens in the direction of the player's view
 
-local GoldsrcEntity = require("goldsrc_entity")
-local FuncDoor = require("func_door")
+local GoldsrcEntity = require("/goldsrc/goldsrc_entity")
+local FuncDoor = require("/goldsrc/func_door")
 local dt = 1/30
 
 local FuncDoorRotating = {}

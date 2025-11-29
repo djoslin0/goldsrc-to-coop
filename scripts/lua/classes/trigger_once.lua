@@ -2,8 +2,8 @@
 -- trigger_multiple --
 ----------------------
 
-local GoldsrcEntity = require("goldsrc_entity")
-local TriggerMultiple = require("trigger_multiple")
+local GoldsrcEntity = require("/goldsrc/goldsrc_entity")
+local TriggerMultiple = require("/goldsrc/trigger_multiple")
 
 local TriggerOnce = {}
 TriggerOnce.__index = TriggerOnce

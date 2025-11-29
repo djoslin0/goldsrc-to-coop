@@ -78,7 +78,7 @@ REM Run the command to convert BSP to OBJ and export the entities
 "%BSPGUY_PATH%" exportent "%BSP_FILE%" -o "%OUT_DIR%\entities.txt"
 
 REM Adjust gamma for atlas images
-FOR %%f IN ("%OUT_DIR%\atlases\*.png") DO "%MAGICK_PATH%" "%%f" -level 0%%,100%%,1.3 "%%f"
+FOR %%f IN ("%OUT_DIR%\atlases\*.png") DO "%MAGICK_PATH%" "%%f" -level 0%%,100%%,1.3 -function polynomial 1.0,0.1 "%%f"
 
 REM Run blender goldsrc pipeline
 "%BLENDER_PATH%" --background --python scripts/blender/goldsrc_pipeline.py -- "%OUT_DIR%" "%BSP_NAME%" "%BLEND_EXPORT_PATH%" "%SCALE%"

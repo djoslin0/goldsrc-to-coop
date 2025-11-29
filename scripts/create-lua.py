@@ -304,7 +304,7 @@ def main():
         lua_path_w = os.path.join(output_dir, "goldsrc", lua_filename)
         if os.path.exists(lua_path_r) and lua_local_path:
             shutil.copy(lua_path_r, lua_path_w)
-            class_requires.append(f"require('goldsrc/{classname}')")
+            class_requires.append(f"require('/goldsrc/{classname}')")
 
     # Set template variables
     template_variables = {

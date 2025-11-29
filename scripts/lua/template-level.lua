@@ -1,4 +1,4 @@
-local goldsrc = require('goldsrc/goldsrc')
+local goldsrc = require('/goldsrc/goldsrc')
 $CLASS_REQUIRES
 
 --------------------

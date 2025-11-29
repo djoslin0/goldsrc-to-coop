@@ -1,6 +1,6 @@
 gGoldsrcObjToEnt = {}
 
-local GoldsrcGfxUtils = require("goldsrc_gfx_utils")
+local GoldsrcGfxUtils = require("/goldsrc/goldsrc_gfx_utils")
 
 local function bhv_goldsrc_entity_init(obj)
     obj.oFlags = OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE
