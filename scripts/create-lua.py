@@ -212,7 +212,7 @@ def process_textures(path, missing_png_path):
     # Collect PNGs from actors (recursive)
     if os.path.exists(actors_dir):
         for root, dirs, files in os.walk(actors_dir):
-            dirs[:] = [d for d in dirs if not d.endswith('_mdl') and not d.endswith("_spr")]
+            dirs[:] = [d for d in dirs if not d.endswith('_mdl') and not d.endswith("_spr") and not d.endswith("_skybox")]
             for file in files:
                 if file.lower().endswith('.png'):
                     png_files.append(os.path.join(root, file))
@@ -227,7 +227,6 @@ def process_textures(path, missing_png_path):
         shutil.copy2(missing_png_path, png_path)
 
 def collect_sprite_data(levelname):
-
     src_sprites_folder = os.path.join("output", levelname, "sprites")
 
     sprite_data = {}
@@ -253,6 +252,22 @@ def collect_sprite_data(levelname):
             if key in used_fields:
                 output += f'    ["{key}"] = {value},\n'
         output += '}\n'
+
+    return output
+
+def collect_skyboxes(path):
+    actors_dir = os.path.join(path, 'actors')
+    output = ''
+
+    if not os.path.isdir(actors_dir):
+        return output
+
+    for folder_name in os.listdir(actors_dir):
+        folder_path = os.path.join(actors_dir, folder_name)
+        if os.path.isdir(folder_path) and folder_name.endswith('_skybox'):
+            # Extract SKYBOXNAME by removing '_skybox'
+            skybox_name = folder_name[:-7]
+            output += f'        ["{skybox_name}"] = smlua_model_util_get_id("{folder_name}_geo"),\n'
 
     return output
 
@@ -314,6 +329,7 @@ def main():
         "$REGISTER_OBJECTS": collect_register_objects(output_dir),
         "$ENT_AABBS":        get_entity_aabbs(os.path.join("output", levelname, "aabb.lua")),
         "$WATER_HULLS":      get_water_hulls(os.path.join("output", levelname, "bsp.json"), bspguy_scale),
+        "$SKYBOXES":         collect_skyboxes(output_dir),
         "$CLASS_REQUIRES":   '\n'.join(class_requires),
         "$SPRITE_DATA":      collect_sprite_data(levelname),
     }

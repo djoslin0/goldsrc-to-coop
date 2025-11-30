@@ -327,9 +327,9 @@ def calculate_aabb_lua():
     return output
 
 
-def stage_export_level(num, folder, level_name, append_file_path):
+def stage_export_level(num, folder, level_name, blend_export_path):
     # Append objects from another .blend file
-    append_blend_objects(append_file_path)
+    append_blend_objects(blend_export_path)
 
     # Make directory at folder/mod and folder/mod/levels if they don't exist
     mod_folder = os.path.join(folder, "mod")

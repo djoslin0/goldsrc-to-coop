@@ -10,6 +10,7 @@ import set_fast64_stuff
 import export_level
 import convert_mdls
 import convert_sprs
+import convert_skybox
 import fix_up_mesh
 
 def main():
@@ -26,10 +27,11 @@ def main():
 
     folder_path = argv[0]
     level_name = argv[1]
-    append_file_path = argv[2]
+    export_file_path = argv[2]
+    skybox_file_path = argv[3]
 
     try:
-        scalar = float(argv[3])
+        scalar = float(argv[4])
     except ValueError:
         print("Error: SCALAR must be a float")
         sys.exit(1)
@@ -44,10 +46,11 @@ def main():
     fix_up_mesh.stage_fix_up_mesh(3, folder_path)
     coop_lightmap.stage_coop_lightmap(4, folder_path)
     set_fast64_stuff.stage_set_fast64_stuff(5, folder_path)
-    export_level.stage_export_level(6, folder_path, level_name, append_file_path)
+    export_level.stage_export_level(6, folder_path, level_name, export_file_path)
 
     convert_mdls.stage_convert_mdls(folder_path)
     convert_sprs.stage_convert_sprs(folder_path, scalar)
+    convert_skybox.stage_convert_skybox(folder_path, skybox_file_path)
 
 if __name__ == "__main__":
     main()

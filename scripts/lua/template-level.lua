@@ -19,6 +19,9 @@ $ENTITIES
     water_hulls = {
 $WATER_HULLS
     },
+    skyboxes = {
+$SKYBOXES
+    },
 }
 
 local entities = goldsrc.levels[LEVEL_$LEVELUNAME].entities

@@ -5,6 +5,7 @@
 require('/goldsrc/bhv_goldsrc_entity')
 local GoldsrcGfxUtils = require("/goldsrc/goldsrc_gfx_utils")
 local GoldsrcHull = require('/goldsrc/goldsrc_hull')
+local BhvGoldsrcSkybox = require('/goldsrc/bhv_goldsrc_skybox')
 
 ------------------------
 -- Set coop constants --
@@ -466,8 +467,16 @@ local function on_level_init()
     sCachedLevelNum = gNetworkPlayers[0].currLevelNum
     sGoldsrcTime = 0
 
-    if gGoldsrc.levels[sCachedLevelNum] ~= nil then
+    level_dict = gGoldsrc.levels[sCachedLevelNum]
+    if level_dict ~= nil then
         GoldsrcGfxUtils.replace_gfx_textures(gMarioStates[0].area.root.node)
+        if level_dict.entities and #level_dict.entities > 0 and level_dict.entities[1]['skyname'] then
+            local skybox_name = level_dict.entities[1]['skyname']
+            local skybox_geo = level_dict.skyboxes[skybox_name]
+            if skybox_geo then
+                spawn_non_sync_object(BhvGoldsrcSkybox.id, skybox_geo, 0, 0, 0, nil)
+            end
+        end
     end
 end
 

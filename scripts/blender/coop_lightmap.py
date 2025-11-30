@@ -15,7 +15,13 @@ def process_materials():
 
     # Determine atlas image path (relative to blend file)
     blend_dir = os.path.dirname(bpy.data.filepath)
-    atlas_path = os.path.join(blend_dir, "atlases", "atlas_0.png")
+    atlas_dir = os.path.join(blend_dir, "atlases")
+    png_files = [f for f in os.listdir(atlas_dir) if f.lower().endswith('.png')]
+    if not png_files:
+        raise RuntimeError("No PNG files found in atlas directory")
+    png_files.sort(key=str.lower)
+    atlas_filename = png_files[0]
+    atlas_path = os.path.join(atlas_dir, atlas_filename)
     if not os.path.isfile(atlas_path):
         raise RuntimeError(f"Atlas image not found: {atlas_path}")
     lm_image = bpy.data.images.load(atlas_path)

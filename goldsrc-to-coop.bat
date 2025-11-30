@@ -31,6 +31,7 @@ SET "BSPGUY_PATH=%~dp0\tools\bspguy\bspguy.exe"
 SET "BSPGUY_INI_PATH=%~dp0\tools\bspguy\bspguy.ini"
 SET "BLENDER_PATH=%~dp0\tools\blender-3.6.23-windows-x64\blender.exe"
 SET "BLEND_EXPORT_PATH=%~dp0\scripts\blender\blend-export.blend"
+SET "BLEND_SKYBOX_PATH=%~dp0\scripts\blender\skybox.blend"
 SET "CREATE_LUA_PATH=%~dp0\scripts\create-lua.py"
 SET "PYTHON_PATH=%~dp0\tools\blender-3.6.23-windows-x64\3.6\python\bin\python.exe"
 SET "MAGICK_PATH=%~dp0\tools\imagemagick\magick.exe"
@@ -42,6 +43,7 @@ IF NOT EXIST "%BSPGUY_PATH%" ECHO BSPGUY not found & PAUSE & EXIT /B
 IF NOT EXIST "%BSPGUY_INI_PATH%" ECHO BSPGUY_INI_PATH not found & PAUSE & EXIT /B
 IF NOT EXIST "%BLENDER_PATH%" ECHO Blender not found & PAUSE & EXIT /B
 IF NOT EXIST "%BLEND_EXPORT_PATH%" ECHO Blender export file not found & PAUSE & EXIT /B
+IF NOT EXIST "%BLEND_SKYBOX_PATH%" ECHO Blender skybox file not found & PAUSE & EXIT /B
 IF NOT EXIST "%BSP_FILE%" ECHO BSP file not found & PAUSE & EXIT /B
 IF NOT EXIST "%MAGICK_PATH%" ECHO Magick not found & PAUSE & EXIT /B
 
@@ -81,7 +83,7 @@ REM Adjust gamma for atlas images
 FOR %%f IN ("%OUT_DIR%\atlases\*.png") DO "%MAGICK_PATH%" "%%f" -level 0%%,100%%,1.3 -function polynomial 1.0,0.1 "%%f"
 
 REM Run blender goldsrc pipeline
-"%BLENDER_PATH%" --background --python scripts/blender/goldsrc_pipeline.py -- "%OUT_DIR%" "%BSP_NAME%" "%BLEND_EXPORT_PATH%" "%SCALE%"
+"%BLENDER_PATH%" --background --python scripts/blender/goldsrc_pipeline.py -- "%OUT_DIR%" "%BSP_NAME%" "%BLEND_EXPORT_PATH%" "%BLEND_SKYBOX_PATH%" "%SCALE%"
 
 :skip_conversion
 
