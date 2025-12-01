@@ -5,16 +5,31 @@ CD /D "%~dp0"
 REM Get the first argument (dragged file)
 SET "BSP_FILE=%~1"
 
-REM Parse optional parameters
+REM Parse optional parameters using a loop for better handling
 SET "OUTPUT_MOD_PATH="
 SET "LUA_ONLY=0"
-IF "%~2"=="--output-mod" (
-    SET "OUTPUT_MOD_PATH=%~3"
-    IF "%~4"=="--lua-only" SET "LUA_ONLY=1"
-) ELSE IF "%~2"=="--lua-only" (
+SET "KZ_FLAG=0"
+
+SHIFT
+:parse_args
+IF "%1"=="" GOTO :end_parse
+IF "%1"=="--kz" (
+    SET "KZ_FLAG=1"
+    SHIFT
+) ELSE IF "%1"=="--output-mod" (
+    SET "OUTPUT_MOD_PATH=%2"
+    SHIFT
+    SHIFT
+) ELSE IF "%1"=="--lua-only" (
     SET "LUA_ONLY=1"
-    IF "%~3"=="--output-mod" SET "OUTPUT_MOD_PATH=%~4"
+    SHIFT
+) ELSE (
+    ECHO Unknown parameter: %1
+    PAUSE
+    EXIT /B 1
 )
+GOTO :parse_args
+:end_parse
 
 REM Check that a file was actually provided
 IF "%BSP_FILE%"=="" (
@@ -35,8 +50,6 @@ SET "BLEND_SKYBOX_PATH=%~dp0\scripts\blender\skybox.blend"
 SET "CREATE_LUA_PATH=%~dp0\scripts\create-lua.py"
 SET "PYTHON_PATH=%~dp0\tools\blender-3.6.23-windows-x64\3.6\python\bin\python.exe"
 SET "MAGICK_PATH=%~dp0\tools\imagemagick\magick.exe"
-SET SCALE=-25
-
 REM Check that important files exist
 IF NOT EXIST "%PROMPT_FOR_HL_DIR_PATH%" ECHO PROMPT_FOR_HL_DIR_PATH not found & PAUSE & EXIT /B
 IF NOT EXIST "%BSPGUY_PATH%" ECHO BSPGUY not found & PAUSE & EXIT /B
@@ -50,12 +63,11 @@ IF NOT EXIST "%MAGICK_PATH%" ECHO Magick not found & PAUSE & EXIT /B
 REM Get base name of BSP file
 FOR %%F IN ("%BSP_FILE%") DO SET "BSP_NAME=%%~nF"
 
-REM Override the scale for kz maps
-IF "%BSP_NAME:~0,3%"=="kz_" (
+REM Set scale based on kz flag
+IF "%KZ_FLAG%"=="1" (
     SET SCALE=-15
-)
-IF "%BSP_NAME:~0,4%"=="mls_" (
-    SET SCALE=-15
+) ELSE (
+    SET SCALE=-25
 )
 
 REM Output directory

@@ -16,6 +16,7 @@ ignore_collision_classes = [
     "func_monsterclip",
     "func_clip_vphysics",
     "env_bubbles",
+    "trigger_push",
 ]
 
 ignore_render_classes = [
@@ -30,6 +31,7 @@ ignore_render_classes = [
     "func_monsterclip",
     "func_clip_vphysics",
     "env_bubbles",
+    "trigger_push",
 ]
 
 invisible_mat_names = [
