@@ -314,6 +314,16 @@ function goldsrc_hook_fire_target(func)
     table.insert(gGoldsrc.hooks['fire_target'], func)
 end
 
+function goldsrc_get_levels()
+    local levels = {}
+
+    for level_id, _ in pairs(gGoldsrc.levels) do
+        levels[level_id] = get_level_name(COURSE_NONE, level_id, 0)
+    end
+
+    return levels
+end
+
 function goldsrc_get_level_entities(levelnum)
     if not levelnum then
         levelnum = gNetworkPlayers[0].currLevelNum
@@ -487,6 +497,7 @@ hook_event(HOOK_ON_LEVEL_INIT, on_level_init)
 _G.Goldsrc = {
     hook_fire_target = goldsrc_hook_fire_target,
     get_level_entities = goldsrc_get_level_entities,
+    get_levels = goldsrc_get_levels,
 }
 
 -------------
