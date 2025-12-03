@@ -1,6 +1,10 @@
 local GoldsrcGfxUtils = {}
+local sReplaced = {}
 
 function GoldsrcGfxUtils.replace_gfx_textures(node)
+    if sReplaced[node] then return end
+    sReplaced[node] = true
+
     local function get_tex_file_from_gfx_texture(gfx_texture)
         if not gfx_texture then return nil end
 

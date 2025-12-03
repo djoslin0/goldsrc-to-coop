@@ -126,7 +126,7 @@ local function act_goldsrc_ladder(m)
     local l_yaw = 0
     if m.playerIndex == 0 and sLadderYaw then
         l_yaw = sLadderYaw
-    elseif m.wall and m.wall.object == m.usedObj then
+    elseif m.playerIndex == 0 and m.wall and m.wall.object == m.usedObj and m.wall.normal then
         l_yaw = sm64_to_radians(m.wall.normal)
     else
         l_yaw = sm64_to_radians(m.faceAngle.y)
