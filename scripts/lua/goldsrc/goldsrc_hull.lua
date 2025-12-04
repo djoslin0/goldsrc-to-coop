@@ -12,11 +12,11 @@ function GoldsrcHull.contains_point(point, hull)
     return true
 end
 
-function GoldsrcHull.within_radius(point, hull, radius)
+function GoldsrcHull.within_radius(x, y, z, hull, radius)
     radius = radius or 0
     for _, plane in ipairs(hull.planes) do
         local n, d = plane.n, plane.d
-        local dist = n[1]*point[1] + n[2]*point[2] + n[3]*point[3] - d
+        local dist = n[1]*x + n[2]*y + n[3]*z - d
         if dist < -radius then
             -- outside the hull by more than the radius
             return false
@@ -25,8 +25,7 @@ function GoldsrcHull.within_radius(point, hull, radius)
     return true
 end
 
-function GoldsrcHull.top_at(point, hull)
-    local x, z = point[1], point[3]
+function GoldsrcHull.top_at(x, y, z, hull)
     local top_y = hull.max[2]  -- start with AABB top
 
     for _, plane in ipairs(hull.planes) do

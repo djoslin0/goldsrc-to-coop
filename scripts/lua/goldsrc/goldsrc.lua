@@ -34,6 +34,10 @@ end
 
 local dt = 1/30
 
+-- Cached tables to avoid allocations
+local sRemoveAttackCache = {}
+local sUseOffsets = {75, 100, 50, 125}
+
 -- These variables must be cleared on level init
 local sAttackCache = {}
 local sCachedLevelNum = -1
@@ -372,8 +376,8 @@ local function update_water_level(m)
         local dz = pz - cz
 
         if dx*dx + dy*dy + dz*dz <= radiusSq then
-            if GoldsrcHull.within_radius({px, py, pz}, hull, radius) then
-                h = GoldsrcHull.top_at({px, py, pz}, hull)
+            if GoldsrcHull.within_radius(px, py, pz, hull, radius) then
+                h = GoldsrcHull.top_at(px, py, pz, hull)
 
                 if h > water_level then
                     water_level = h
@@ -403,9 +407,8 @@ local function before_mario_update(m)
         local dir_z = coss(yaw) * dir_dist
 
         -- raycast for user at multiple heights
-        local offsets = {75, 100, 50, 125}
         local found_useable = false
-        for _, offset in ipairs(offsets) do
+        for _, offset in ipairs(sUseOffsets) do
             local ray = collision_find_surface_on_ray(m.pos.x, m.pos.y + offset, m.pos.z, dir_x, dir_y, dir_z)
             if ray.surface and ray.surface.object then
                 local obj = ray.surface.object
@@ -436,16 +439,19 @@ local function update()
     -- update attack cache
     if next(sAttackCache) ~= nil then
         -- figure out which attack events to forget
-        local remove = {}
         for k, v in pairs(sAttackCache) do
             if not is_attacking_obj(v, k) then
-                table.insert(remove, k)
+                table.insert(sRemoveAttackCache, k)
             end
         end
 
         -- Remove the collected keys
-        for _, k in ipairs(remove) do
+        for _, k in ipairs(sRemoveAttackCache) do
             sAttackCache[k] = nil
+        end
+        -- Clear the cache
+        for i = #sRemoveAttackCache, 1, -1 do
+            sRemoveAttackCache[i] = nil
         end
     end
 

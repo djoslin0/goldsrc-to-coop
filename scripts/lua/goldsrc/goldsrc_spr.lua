@@ -5,6 +5,8 @@ local dt = 1/30
 
 local sObjToSpr = {}
 
+local sDefaultRenderColor = {255, 255, 255}
+
 local TEX_FORMAT_SPR_NORMAL     = 0
 local TEX_FORMAT_SPR_ADDITIVE   = 1
 local TEX_FORMAT_SPR_INDEXALPHA = 2
@@ -173,7 +175,7 @@ function g_goldsrc_spr(node, matStackIndex)
 
     if spr.update_render then
         local ent = spr.ent
-        local rendercolor = {255, 255, 255}
+        local rendercolor = sDefaultRenderColor
         local renderamt = 255
 
         if spr.render then
