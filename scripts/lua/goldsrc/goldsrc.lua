@@ -148,9 +148,6 @@ function goldsrc_apply_damage(target, dmg, damager)
 end
 
 function goldsrc_fire_target(target_name, activator, caller, use_type, value, delay)
-    local targets = goldsrc_get_entities_from_target_name(target_name)
-    if not targets then return end
-
     -- Check hooks if they exist
     local hooks = gGoldsrc.hooks and gGoldsrc.hooks['fire_target']
     if hooks then
@@ -165,6 +162,9 @@ function goldsrc_fire_target(target_name, activator, caller, use_type, value, de
             return
         end
     end
+
+    local targets = goldsrc_get_entities_from_target_name(target_name)
+    if not targets then return end
 
     -- Proceed with firing targets
     for _, target in ipairs(targets) do

@@ -1,6 +1,7 @@
 @ECHO OFF
 REM Set working directory to the batch file location
-CD /D "%~dp0"
+pushd "%~dp0"
+SET "FULLPATH=%~dp0"
 
 REM Get the first argument (dragged file)
 SET "BSP_FILE=%~1"
@@ -40,16 +41,16 @@ IF "%BSP_FILE%"=="" (
 
 ECHO Using BSP file: "%BSP_FILE%"
 
-REM Set paths
-SET "PROMPT_FOR_HL_DIR_PATH=%~dp0\scripts\prompt-for-hl-dir.py"
-SET "BSPGUY_PATH=%~dp0\tools\bspguy\bspguy.exe"
-SET "BSPGUY_INI_PATH=%~dp0\tools\bspguy\bspguy.ini"
-SET "BLENDER_PATH=%~dp0\tools\blender-3.6.23-windows-x64\blender.exe"
-SET "BLEND_EXPORT_PATH=%~dp0\scripts\blender\blend-export.blend"
-SET "BLEND_SKYBOX_PATH=%~dp0\scripts\blender\skybox.blend"
-SET "CREATE_LUA_PATH=%~dp0\scripts\create-lua.py"
-SET "PYTHON_PATH=%~dp0\tools\blender-3.6.23-windows-x64\3.6\python\bin\python.exe"
-SET "MAGICK_PATH=%~dp0\tools\imagemagick\magick.exe"
+REM Set paths (relative to current directory after pushd)
+SET "PROMPT_FOR_HL_DIR_PATH=%FULLPATH%\scripts\prompt-for-hl-dir.py"
+SET "BSPGUY_PATH=%FULLPATH%\tools\bspguy\bspguy.exe"
+SET "BSPGUY_INI_PATH=%FULLPATH%\tools\bspguy\bspguy.ini"
+SET "BLENDER_PATH=%FULLPATH%\tools\blender-3.6.23-windows-x64\blender.exe"
+SET "BLEND_EXPORT_PATH=%FULLPATH%\scripts\blender\blend-export.blend"
+SET "BLEND_SKYBOX_PATH=%FULLPATH%\scripts\blender\skybox.blend"
+SET "CREATE_LUA_PATH=%FULLPATH%\scripts\create-lua.py"
+SET "PYTHON_PATH=%FULLPATH%\tools\blender-3.6.23-windows-x64\3.6\python\bin\python.exe"
+SET "MAGICK_PATH=%FULLPATH%\tools\imagemagick\magick.exe"
 REM Check that important files exist
 IF NOT EXIST "%PROMPT_FOR_HL_DIR_PATH%" ECHO PROMPT_FOR_HL_DIR_PATH not found & PAUSE & EXIT /B
 IF NOT EXIST "%BSPGUY_PATH%" ECHO BSPGUY not found & PAUSE & EXIT /B
@@ -71,7 +72,7 @@ IF "%KZ_FLAG%"=="1" (
 )
 
 REM Output directory
-SET "OUT_DIR=%~dp0\output\%BSP_NAME%"
+SET "OUT_DIR=%FULLPATH%\output\%BSP_NAME%"
 IF NOT EXIST "%OUT_DIR%" MD "%OUT_DIR%"
 
 REM Get/set the half life dir
@@ -85,7 +86,9 @@ IF NOT %ERRORLEVEL%==0 (
 IF "%LUA_ONLY%"=="1" GOTO :skip_conversion
 
 REM Delete OUT_DIR
-IF EXIST "%OUT_DIR%" RMDIR /S /Q "%OUT_DIR%
+IF EXIST "%OUT_DIR%" RMDIR /S /Q "%OUT_DIR%"
+REM Recreate OUT_DIR
+MD "%OUT_DIR%"
 
 REM Run the command to convert BSP to OBJ and export the entities
 "%BSPGUY_PATH%" exportobj "%BSP_FILE%" -scale "%SCALE%" -lightmap "1" -withmdl "0" -o "%OUT_DIR%"

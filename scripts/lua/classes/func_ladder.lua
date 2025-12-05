@@ -39,12 +39,13 @@ end
 
 local function raycast_to_ladder(m, obj, yaw)
         -- try to find ladder nearby
+        if yaw == nil then return nil end
         local dir_x = math.sin(yaw) * 200
         local dir_y = 0
         local dir_z = math.cos(yaw) * 200
         local ray = collision_find_surface_on_ray(m.pos.x, m.pos.y + 100, m.pos.z, dir_x, dir_y, dir_z, 10)
 
-        if ray.surface and ray.surface.object == obj then
+        if ray and ray.surface and ray.surface.object == obj then
             m.wall = ray.surface
             return ray
         else
@@ -89,8 +90,17 @@ local function act_goldsrc_ladder(m)
 
     -- handle animation
     set_character_animation(m, CHAR_ANIM_CRAWLING)
-    local loop = m.marioObj.header.gfx.animInfo.curAnim.loopEnd
-    set_anim_to_frame(m, (m.pos.y / 2) % loop)
+    local loop = 0
+    if m.marioObj and m.marioObj.header and m.marioObj.header.gfx and
+       m.marioObj.header.gfx.animInfo and m.marioObj.header.gfx.animInfo.curAnim and
+       m.marioObj.header.gfx.animInfo.curAnim.loopEnd then
+        loop = m.marioObj.header.gfx.animInfo.curAnim.loopEnd
+    end
+    if loop > 0 then
+        set_anim_to_frame(m, (m.pos.y / 2) % loop)
+    else
+        set_anim_to_frame(m, 0)
+    end
 
     -- Check if player's intended direction is towards the ladder
     local dot = moving_into_wall_dot(m)
@@ -127,14 +137,16 @@ local function act_goldsrc_ladder(m)
     if m.playerIndex == 0 and sLadderYaw then
         l_yaw = sLadderYaw
     elseif m.playerIndex == 0 and m.wall and m.wall.object == m.usedObj and m.wall.normal then
-        l_yaw = sm64_to_radians(m.wall.normal)
+        l_yaw = math.atan2(m.wall.normal.x, m.wall.normal.z) + math.pi
     else
         l_yaw = sm64_to_radians(m.faceAngle.y)
     end
-    gfx.pos.x = m.pos.x + math.sin(l_yaw) * 60
-    gfx.pos.z = m.pos.z + math.cos(l_yaw) * 60
-    gfx.angle.x = degrees_to_sm64(-90)
-    gfx.angle.y = radians_to_sm64(l_yaw)
+    if m.marioObj and m.marioObj.header and m.marioObj.header.gfx then
+        gfx.pos.x = m.pos.x + math.sin(l_yaw) * 60
+        gfx.pos.z = m.pos.z + math.cos(l_yaw) * 60
+        gfx.angle.x = degrees_to_sm64(-90)
+        gfx.angle.y = radians_to_sm64(l_yaw)
+    end
 
     -- reset velocities
     m.vel.y = old_vel_y * 0.6
@@ -149,7 +161,7 @@ hook_mario_action(ACT_GOLDSRC_LADDER, act_goldsrc_ladder)
 
 function FuncLadder:could_attach(m)
     local ray1 = raycast_to_ladder(m, self.obj, sm64_to_radians(m.faceAngle.y))
-    if ray1 then
+    if ray1 and ray1.surface and ray1.surface.normal then
         sLadderYaw = math.atan2(ray1.surface.normal.x, ray1.surface.normal.z) + math.pi
         local ray2 = raycast_to_ladder(m, self.obj, sLadderYaw)
         if ray2 then
