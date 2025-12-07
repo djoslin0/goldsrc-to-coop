@@ -2,4 +2,6 @@ tools/*
 !tools/README.txt
 output/*
 !output/README.txt
+override-textures/*
+!override-textures/README.txt
 __pycache__/

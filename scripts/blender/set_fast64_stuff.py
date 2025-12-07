@@ -57,9 +57,48 @@ def update_material_cache(mat):
         bpy.ops.material.update_f3d_nodes()
 
 
+def check_image_has_transparency(image):
+    if image.channels != 4:
+        return False  # No alpha channel
+    pixels = list(image.pixels)
+    # Check alpha values (every 4th value starting from index 3)
+    for i in range(3, len(pixels), 4):
+        if pixels[i] < 1.0:
+            return True
+    return False
+
+
+def create_additive_image(image):
+    base_name = os.path.splitext(image.name)[0]
+    new_name = base_name + "_additive"
+    # Check if additive image already exists
+    existing_image = bpy.data.images.get(new_name)
+    if existing_image:
+        return existing_image
+    width, height = image.size
+    # Create new image with alpha channel
+    new_image = bpy.data.images.new(name=new_name, width=width, height=height, alpha=True)
+    # Get original pixels
+    pixels = list(image.pixels)
+    num_pixels = width * height
+    new_pixels = []
+    channels = image.channels
+    for i in range(num_pixels):
+        r = pixels[i * channels + 0]
+        g = pixels[i * channels + 1]
+        b = pixels[i * channels + 2]
+        # Intensity as average
+        intensity = (r + g + b) / 3.0
+        new_pixels.extend([r, g, b, intensity])
+    new_image.pixels = new_pixels
+    return new_image
+
+
 def set_fast64_material_invisible(mat):
     mat.f3d_mat.draw_layer.sm64 = '4'
     mat.f3d_mat.combiner1.D_alpha = '0'
+    mat.collision_type_simple = 'Custom'
+    mat.collision_custom = '0x100'
     update_material_cache(mat)
 
 
@@ -87,9 +126,7 @@ def set_fast64_material_render_mode_texture(mat, alpha):
 
 def set_fast64_material_render_mode_glow(mat, alpha):
     # TODO: additive
-    set_fast64_material_render_mode_texture(mat, alpha)
-    mat.f3d_mat.rdp_settings.g_cull_back = False
-    update_material_cache(mat)
+    set_fast64_material_render_mode_additive(mat, alpha)
 
 
 def set_fast64_material_render_mode_solid(mat, cull_back = True):
@@ -105,10 +142,19 @@ def set_fast64_material_water(mat):
 
 
 def set_fast64_material_render_mode_additive(mat, alpha):
-    # TODO: additive
-    set_fast64_material_render_mode_texture(mat, alpha)
-    mat.f3d_mat.rdp_settings.g_cull_back = False
-    update_material_cache(mat)
+    tex = mat.f3d_mat.tex0.tex
+    if tex and not check_image_has_transparency(tex):
+        mat.f3d_mat.tex0.tex = create_additive_image(tex)
+        update_material_cache(mat)
+
+    mat.f3d_mat.draw_layer.sm64 = '5'
+    mat.f3d_mat.combiner1.A = '0'
+    mat.f3d_mat.combiner1.B = '0'
+    mat.f3d_mat.combiner1.C = '0'
+    mat.f3d_mat.combiner1.D = 'TEXEL0'
+    mat.f3d_mat.combiner1.D_alpha = 'TEXEL0'
+
+    #mat.f3d_mat.rdp_settings.g_cull_back = False
 
 
 def set_faces_smooth_for_material(obj, mat):
