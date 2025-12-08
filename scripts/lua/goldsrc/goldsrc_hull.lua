@@ -19,6 +19,7 @@ function GoldsrcHull.within_radius(x, y, z, hull, radius)
         local dist = n[1]*x + n[2]*y + n[3]*z - d
         if dist < -radius then
             -- outside the hull by more than the radius
+            djui_chat_message_create(string.format("Outside hull plane: n=(%.2f, %.2f, %.2f), d=%.2f, dist=%.2f, radius=%.2f", n[1], n[2], n[3], d, dist, radius))
             return false
         end
     end

@@ -65,9 +65,14 @@ function goldsrc_get_type(ent)
 end
 
 function goldsrc_after_level_defined(level_dict)
-    -- remember targetnameToEnt
+    -- remember targetnameToEnt and hull
     level_dict.targetnameToEnt = {}
     for _, ent in ipairs(level_dict.entities) do
+        ent._hulls = goldsrc_get_hulls(level_dict, ent)
+        if ent._hulls then
+            print("\n\nEntity: " .. (ent.classname or "nil") .. ", hull: " .. (ent._hull and "yes" or "no") .. ', model: ' .. ent.model .. '\n\n')
+        end
+
         if ent.targetname ~= nil then
             should_link = true
             if ent._class and ent._class.should_link then
@@ -100,6 +105,26 @@ function goldsrc_get_entity(entity_index)
     end
 
     return entities[idx]
+end
+
+function goldsrc_get_hulls(level_data, ent)
+    if not level_data then
+        return nil
+    end
+
+    local model_hulls = level_data.model_hulls
+
+    if not model_hulls then
+        return nil
+    end
+
+    if not ent.model or not ent.model:sub(1,1) == '*' then
+        return nil
+    end
+
+    local model_idx = tonumber(ent.model:sub(2))
+    local hull = model_hulls[model_idx]
+    return hull
 end
 
 function goldsrc_get_entities()

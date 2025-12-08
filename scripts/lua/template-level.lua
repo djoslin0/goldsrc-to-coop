@@ -19,6 +19,9 @@ $ENTITIES
     water_hulls = {
 $WATER_HULLS
     },
+    model_hulls = {
+$MODEL_HULLS
+    },
     skyboxes = {
 $SKYBOXES
     },

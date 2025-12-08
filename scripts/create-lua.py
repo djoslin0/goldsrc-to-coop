@@ -3,8 +3,8 @@ import sys
 import re
 import shutil
 import json
+import extract_hulls
 from goldsrc_parse_ents import convert_entities_to_lua
-from extract_clipnode_contents import extract_clipnode_contents_from_model, extract_node_and_leaves_contents, CONTENTS_WATER, CONTENTS_SOLID
 
 # Load the template from template-main.lua
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -54,145 +54,6 @@ def collect_register_objects(output_dir):
 def get_entity_aabbs(path):
     with open(path, 'r') as f:
         return f.read()
-
-##################################################################################################
-
-def convert_hull(hull, scalar):
-    e_min = hull['mins']
-    e_max = hull['maxs']
-
-    n_hull = {}
-
-    n_hull['mins'] = [
-        e_min[0] * scalar,
-        e_min[2] * scalar,
-        e_max[1] * -scalar,
-    ]
-
-    n_hull['maxs'] = [
-        e_max[0] * scalar,
-        e_max[2] * scalar,
-        e_min[1] * -scalar,
-    ]
-
-    n_planes = []
-    inv_s = 1.0 / scalar
-
-    for plane in hull['planes']:
-        n = plane['normal']
-        d = plane['dist']
-
-        # Transform normal (using inverse-transpose)
-        nx = n[0] * inv_s
-        ny = n[2] * inv_s
-        nz = -n[1] * inv_s
-
-        # Renormalize
-        length = (nx*nx + ny*ny + nz*nz) ** 0.5
-        nx /= length
-        ny /= length
-        nz /= length
-
-        # Dist scales with the same uniform scale
-        d_new = d * scalar
-
-        n_planes.append({
-            'normal': [nx, ny, nz],
-            'dist': d_new,
-        })
-
-    n_hull['planes'] = n_planes
-
-    return n_hull
-
-def get_water_hulls(path, bspguy_scale):
-    if not os.path.exists(path):
-        return ''
-
-    def fmt_num(n):
-        s = f"{n:.2f}"
-        s = s.rstrip('0').rstrip('.')   # remove trailing zeros and dot
-        return s
-
-    def fmt_vec3(v):
-        return f"{fmt_num(v[0])}, {fmt_num(v[1])}, {fmt_num(v[2])}"
-
-    def fmt_plane(p):
-        return f"{{ n = {{ {fmt_vec3(p['normal'])} }}, d = {fmt_num(p['dist'])} }}"
-
-    def fmt_hulls(hulls):
-        output = ''
-        for hull in hulls:
-            n_hull = convert_hull(hull, scalar)
-            planes_str = ", ".join(fmt_plane(p) for p in n_hull['planes'])
-            output += ( "        {"
-                f" min = {{ {fmt_vec3(n_hull['mins'])} }},"
-                f" max = {{ {fmt_vec3(n_hull['maxs'])} }},"
-                f" planes = {{ {planes_str} }},\n"
-                " },\n"
-            )
-        return output
-
-    scalar = 100 / -bspguy_scale
-    models_with_water = []
-    output = ''
-
-    # read bsp.json
-    with open(path, 'r') as f:
-        bsp_json = json.loads(f.read())
-
-    # convert node and leaf hulls from root and export them
-    root_hulls = extract_node_and_leaves_contents(bsp_json['nodes'], bsp_json['leaves'], 0, CONTENTS_WATER)
-    output += fmt_hulls(root_hulls)
-
-    # convert model hulls and export them
-    for model_idx, model in bsp_json['models'].items():
-        if model_idx == "0":
-            continue
-
-        if model_idx in models_with_water:
-            continue
-
-        nl_hulls = extract_node_and_leaves_contents(bsp_json['nodes'], bsp_json['leaves'], model['hulls'][0]['headnode'], CONTENTS_WATER)
-        if len(nl_hulls) > 0:
-            output += fmt_hulls(nl_hulls)
-            models_with_water.append(model_idx)
-
-        if model_idx in models_with_water:
-            continue
-
-        hulls = extract_clipnode_contents_from_model(model, CONTENTS_WATER)
-        if len(hulls) > 0:
-            output += fmt_hulls(hulls)
-            models_with_water.append(model_idx)
-
-    # find entities with a skin of CONTENTS_WATER and replace their CONTENTS_SOLID
-    for entity_idx, entity in bsp_json['entities'].items():
-        if 'keyvalues' not in entity:
-            continue
-        if 'skin' not in entity['keyvalues']:
-            continue
-        if 'model' not in entity['keyvalues']:
-            continue
-        if not entity['keyvalues']['model'].startswith('*'):
-            continue
-        if entity['keyvalues']['skin'] != str(CONTENTS_WATER):
-            continue
-
-        model_idx = entity['keyvalues']['model'].lstrip('*')
-        if model_idx in models_with_water or model_idx == '0':
-            continue
-
-        model = bsp_json['models'][model_idx]
-
-        nl_hulls = extract_node_and_leaves_contents(bsp_json['nodes'], bsp_json['leaves'], model['hulls'][0]['headnode'], CONTENTS_SOLID)
-        if len(nl_hulls) > 0:
-            output += fmt_hulls(nl_hulls)
-            models_with_water.append(model_idx)
-
-    return output
-
-##################################################################################################
 
 def process_textures(path, missing_png_path, override_texture_path):
     levels_dir = os.path.join(path, 'levels')
@@ -336,7 +197,8 @@ def main():
         "$ENTITIES":         entities_lua,
         "$REGISTER_OBJECTS": collect_register_objects(output_dir),
         "$ENT_AABBS":        get_entity_aabbs(os.path.join("output", levelname, "aabb.lua")),
-        "$WATER_HULLS":      get_water_hulls(os.path.join("output", levelname, "bsp.json"), bspguy_scale),
+        "$WATER_HULLS":      extract_hulls.get_water_hulls(os.path.join("output", levelname, "bsp.json"), bspguy_scale),
+        "$MODEL_HULLS":      extract_hulls.get_model_hulls(os.path.join("output", levelname, "bsp.json"), bspguy_scale),
         "$SKYBOXES":         collect_skyboxes(output_dir),
         "$CLASS_REQUIRES":   '\n'.join(class_requires),
         "$SPRITE_DATA":      collect_sprite_data(levelname),
