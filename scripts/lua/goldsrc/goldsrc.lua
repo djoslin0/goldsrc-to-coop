@@ -69,9 +69,6 @@ function goldsrc_after_level_defined(level_dict)
     level_dict.targetnameToEnt = {}
     for _, ent in ipairs(level_dict.entities) do
         ent._hulls = goldsrc_get_hulls(level_dict, ent)
-        if ent._hulls then
-            print("\n\nEntity: " .. (ent.classname or "nil") .. ", hull: " .. (ent._hull and "yes" or "no") .. ', model: ' .. ent.model .. '\n\n')
-        end
 
         if ent.targetname ~= nil then
             should_link = true
