@@ -97,6 +97,15 @@ REM Run the command to convert BSP to OBJ and export the entities
 REM Adjust gamma for atlas images
 FOR %%f IN ("%OUT_DIR%\atlases\*.png") DO "%MAGICK_PATH%" "%%f" -level 0%%,100%%,1.3 -function polynomial 1.0,0.1 "%%f"
 
+REM Create additive versions of textures
+FOR %%f IN ("%OUT_DIR%\textures\*.png") DO (
+    setlocal enabledelayedexpansion
+    set "input=%%f"
+    set "output=!input:.png=_additive.png!"
+    "%MAGICK_PATH%" "!input!" -alpha set -channel A -fx "(r+g+b)/3" "!output!"
+    endlocal
+)
+
 REM Run blender goldsrc pipeline
 "%BLENDER_PATH%" --background --python scripts/blender/goldsrc_pipeline.py -- "%OUT_DIR%" "%BSP_NAME%" "%BLEND_EXPORT_PATH%" "%BLEND_SKYBOX_PATH%" "%SCALE%"
 
