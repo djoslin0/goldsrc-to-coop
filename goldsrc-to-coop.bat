@@ -103,7 +103,7 @@ REM Run blender goldsrc pipeline
 :skip_conversion
 
 REM Create lua files
-"%PYTHON_PATH%" "%CREATE_LUA_PATH%" "%BSP_NAME%" "%OUT_DIR%/entities.txt" "%SCALE%" "%LUA_ONLY%"
+"%PYTHON_PATH%" "%CREATE_LUA_PATH%" "%BSP_NAME%" "%OUT_DIR%/entities.txt" "%SCALE%" "%LUA_ONLY%" "%FULLPATH%override-textures"
 
 REM If --output-mod was specified, copy the mod directory to the given path
 IF DEFINED OUTPUT_MOD_PATH (

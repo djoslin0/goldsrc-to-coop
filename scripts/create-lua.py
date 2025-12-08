@@ -194,7 +194,7 @@ def get_water_hulls(path, bspguy_scale):
 
 ##################################################################################################
 
-def process_textures(path, missing_png_path):
+def process_textures(path, missing_png_path, override_texture_path):
     levels_dir = os.path.join(path, 'levels')
     actors_dir = os.path.join(path, 'actors')
     textures_dir = os.path.join(path, 'textures')
@@ -219,9 +219,16 @@ def process_textures(path, missing_png_path):
 
     # Process each PNG
     for png_path in png_files:
+        basename = os.path.basename(png_path)
+
+        # Determine source path: use override if available, otherwise original
+        source_path = png_path
+        if override_texture_path and os.path.exists(os.path.join(override_texture_path, basename)):
+            source_path = os.path.join(override_texture_path, basename)
+
         # Copy to textures directory
-        dest = os.path.join(textures_dir, os.path.basename(png_path))
-        shutil.copy2(png_path, dest)
+        dest = os.path.join(textures_dir, basename)
+        shutil.copy2(source_path, dest)
 
         # Replace original with copy of missing_png_path
         shutil.copy2(missing_png_path, png_path)
@@ -272,8 +279,8 @@ def collect_skyboxes(path):
     return output
 
 def main():
-    if len(sys.argv) < 4:
-        print("Usage: python generate_level_script.py <levelname> <entities.txt filepath> <bspguy_scale>")
+    if len(sys.argv) < 6:
+        print("Usage: python generate_level_script.py <levelname> <entities.txt filepath> <bspguy_scale> <lua_only=0|1> <override_texture_path>")
         sys.exit(1)
 
     levelname = sys.argv[1]
@@ -281,6 +288,7 @@ def main():
     entities_path = sys.argv[2]
     bspguy_scale = int(sys.argv[3])
     lua_only = int(sys.argv[4]) == 1
+    override_texture_path = sys.argv[5]
 
     # Build output path
     output_dir = os.path.join("output", levelname, "mod")
@@ -354,7 +362,7 @@ def main():
     # Process textures
     if not lua_only:
         missing_png_path = os.path.join(script_dir, 'missing_texture.png')
-        process_textures(output_dir, missing_png_path)
+        process_textures(output_dir, missing_png_path, override_texture_path)
 
     print(f"✅ Mod generated at: {output_dir}")
 
