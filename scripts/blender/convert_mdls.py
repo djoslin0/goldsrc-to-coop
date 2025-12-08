@@ -2,8 +2,10 @@ import bpy
 import os
 import json
 import re
+import math
 import set_fast64_stuff
 import export_level
+from mathutils import Vector
 
 # mdl flags
 STUDIO_NF_FLATSHADE  = 0x0001
@@ -164,6 +166,75 @@ def apply_material_flags_to_objects():
                 set_fast64_stuff.set_faces_smooth_for_material(obj, mat)
 
 
+def shift_uvs_into_unit_range(obj):
+    """
+    Attempts to shift each triangle's UVs so they fit into the [0,1] range,
+    using integer wrapping offsets. Does NOT scale UVs.
+    """
+    mesh = obj.data
+
+    if not mesh.uv_layers.active:
+        raise RuntimeError(f"Object '{obj.name}' has no UV layers!")
+
+    uv_layer = mesh.uv_layers.active.data
+
+    def can_shift_into_unit(uvs, shift):
+        """Check if shifting all UVs by 'shift' will place them in [0,1]."""
+        for uv in uvs:
+            shifted = uv - shift
+            if not (0.0 <= shifted.x <= 1.0 and 0.0 <= shifted.y <= 1.0):
+                return False
+        return True
+
+    for poly in mesh.polygons:
+        if len(poly.loop_indices) != 3:
+            continue  # only triangles
+
+        loop_idxs = poly.loop_indices
+        uvs = [uv_layer[i].uv.copy() for i in loop_idxs]
+
+        # Compute the rounded average for base integer shift
+        avg = sum(uvs, Vector((0.0, 0.0))) / 3.0
+        base_shift = Vector((round(avg.x), round(avg.y)))
+
+        # Try the base shift first
+        shift_to_use = None
+
+        if can_shift_into_unit(uvs, base_shift):
+            shift_to_use = base_shift
+        else:
+            # Try small integer offsets around that shift (3×3 area)
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    test_shift = base_shift + Vector((dx, dy))
+                    if can_shift_into_unit(uvs, test_shift):
+                        shift_to_use = test_shift
+                        break
+                if shift_to_use:
+                    break
+
+        # Apply shift if one fits the 0..1 range
+        if shift_to_use:
+            for i in loop_idxs:
+                uv_layer[i].uv -= shift_to_use
+
+    mesh.update()
+
+
+def shift_mdl_uvs_into_unit_range():
+    """Shift UVs into unit range for all MDL mesh objects."""
+    for obj in bpy.data.objects:
+        if not is_in_mdl_collection(obj):
+            continue
+        if obj.type != 'MESH':
+            continue
+
+        try:
+            shift_uvs_into_unit_range(obj)
+        except RuntimeError as e:
+            print(f"Warning: Could not shift UVs for object '{obj.name}': {e}")
+
+
 def export_mdl(obj, actors_folder):
     # Select blender object in object mode
     bpy.ops.object.select_all(action='DESELECT')
@@ -197,6 +268,8 @@ def stage_convert_mdls(folder):
 
     convert_mdl_materials()
     apply_material_flags_to_objects()
+
+    shift_mdl_uvs_into_unit_range()
 
     # Export only the root empty objects (not the child meshes)
     for obj in bpy.data.objects:

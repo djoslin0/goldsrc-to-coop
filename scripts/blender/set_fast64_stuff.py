@@ -70,7 +70,7 @@ def check_image_has_transparency(image):
 
 def create_additive_image(image):
     base_name = os.path.splitext(image.name)[0]
-    new_name = base_name + "_additive"
+    new_name = re.sub(r'[^a-zA-Z0-9_]', '_', base_name) + "_additive"
     # Check if additive image already exists
     existing_image = bpy.data.images.get(new_name)
     if existing_image:
