@@ -88,7 +88,7 @@ def process_textures(path, missing_png_path, override_texture_path):
             source_path = os.path.join(override_texture_path, basename)
 
         # Copy to textures directory
-        dest = os.path.join(textures_dir, basename)
+        dest = os.path.join(textures_dir, basename.lower())
         shutil.copy2(source_path, dest)
 
         # Replace original with copy of missing_png_path
