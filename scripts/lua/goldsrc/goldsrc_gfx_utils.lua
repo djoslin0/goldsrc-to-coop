@@ -16,7 +16,7 @@ function GoldsrcGfxUtils.replace_gfx_textures(node)
         if not name then name = gfx_name:match("_%d+_(.-)_rgba16$") end
         if not name then return nil end
 
-        name = string.lower(name) .. '.rgba16'
+        name = name .. '.rgba16'
         local tex = get_texture_info(name)
         if not tex then return nil end
 
