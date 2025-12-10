@@ -60,12 +60,12 @@ function TriggerTeleport:update()
     local m = gMarioStates[0]
 
     -- Check if player is in the teleport area and cooldown is reset
-    if goldsrc_intersects_aabb(m.pos, 5, self.ent._aabb) and (sTeleporteeCooldowns[m] or 0) <= 0 then
+    if goldsrc_intersects_aabb(m.pos, 10, self.ent._aabb) and (sTeleporteeCooldowns[m] or 0) <= 0 then
         local hulls = self.ent._hulls
         local hull_check = false
         if hulls then
             for _, hull in ipairs(hulls) do
-                hull_check = GoldsrcHull.within_radius(m.pos.x, m.pos.y, m.pos.z, hull, 5)
+                hull_check = GoldsrcHull.within_radius(m.pos.x, m.pos.y, m.pos.z, hull, 10)
                 if hull_check then
                     break
                 end
