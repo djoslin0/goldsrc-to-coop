@@ -43,6 +43,7 @@ local sAttackCache = {}
 local sCachedLevelNum = -1
 local sEventQueue = {}
 local sGoldsrcTime = 0
+local sReplaceTextures = 0
 
 --------------
 -- Localize --
@@ -488,6 +489,17 @@ local function update()
             i = i + 1
         end
     end
+
+    -- replace textures again -- idk sometimes it doesn't do it the first time
+    if sReplaceTextures > 0 then
+        sReplaceTextures = sReplaceTextures - 1
+        if sReplaceTextures == 0 then
+            local level_dict = gGoldsrc.levels[sCachedLevelNum]
+            if level_dict ~= nil then
+                GoldsrcGfxUtils.replace_gfx_textures(gMarioStates[0].area.root.node)
+            end
+        end
+    end
 end
 
 hook_event(HOOK_UPDATE, update)
@@ -504,6 +516,7 @@ local function on_level_init()
     gGoldsrcObjToEnt = {}
     sCachedLevelNum = gNetworkPlayers[0].currLevelNum
     sGoldsrcTime = 0
+    sReplaceTextures = 3
 
     level_dict = gGoldsrc.levels[sCachedLevelNum]
     if level_dict ~= nil then
