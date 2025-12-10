@@ -516,7 +516,7 @@ local function on_level_init()
     gGoldsrcObjToEnt = {}
     sCachedLevelNum = gNetworkPlayers[0].currLevelNum
     sGoldsrcTime = 0
-    sReplaceTextures = 3
+    sReplaceTextures = 30
 
     level_dict = gGoldsrc.levels[sCachedLevelNum]
     if level_dict ~= nil then
