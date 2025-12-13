@@ -21,23 +21,12 @@ def read_skybox_name(folder):
 
 def check_skybox_exists(skybox_name, suffixes, skybox_dir):
     for suffix in suffixes:
-        tga_filename = f"{skybox_name}{suffix}.tga"
-        tga_path = os.path.join(skybox_dir, tga_filename)
-        if not os.path.isfile(tga_path):
+        png_filename = f"{skybox_name}{suffix}.png"
+        png_path = os.path.join(skybox_dir, png_filename)
+        if not os.path.isfile(png_path):
             return False
     return True
 
-def convert_skybox_tga_to_png(skybox_name, suffixes, skybox_dir):
-    for suffix in suffixes:
-        tga_filename = f"{skybox_name}{suffix}.tga"
-        tga_path = os.path.join(skybox_dir, tga_filename)
-        png_filename = f"{skybox_name}{suffix}.png"
-        png_path = os.path.join(skybox_dir, png_filename)
-
-        if not os.path.isfile(png_path):
-            image = bpy.data.images.load(tga_path)
-            image.file_format = 'PNG'
-            image.save(filepath=png_path)
 
 def set_materials(skybox_name, suffixes, skybox_dir):
     for suffix in suffixes:
@@ -55,11 +44,15 @@ def export_skybox(skybox_name, skybox_obj, actors_folder):
     skybox_obj.select_set(True)
     bpy.context.view_layer.objects.active = skybox_obj
 
-    bpy.data.scenes["Scene"].geoTexDir = f'actors/{skybox_name}_skybox'
+    skyname = skybox_name
+    if not skyname[0].isalpha():
+        skyname = f'_{skyname}'
+
+    bpy.data.scenes["Scene"].geoTexDir = f'actors/{skyname}_skybox'
     bpy.data.scenes["Scene"].geoCustomExport = True
     bpy.data.scenes["Scene"].geoExportPath = actors_folder
-    bpy.data.scenes["Scene"].geoName = f'{skybox_name}_skybox'
-    bpy.data.scenes["Scene"].geoStructName = f'{skybox_name}_skybox_geo'
+    bpy.data.scenes["Scene"].geoName = f'{skyname}_skybox'
+    bpy.data.scenes["Scene"].geoStructName = f'{skyname}_skybox_geo'
     bpy.ops.object.sm64_export_geolayout_object()
 
 def stage_convert_skybox(folder, blend_skybox_path):
@@ -83,8 +76,6 @@ def stage_convert_skybox(folder, blend_skybox_path):
 
     if not skybox_exists:
         return False
-
-    convert_skybox_tga_to_png(skybox_name, suffixes, skybox_dir)
 
     skybox_obj = bpy.data.objects.get("skybox")
     if not skybox_obj:

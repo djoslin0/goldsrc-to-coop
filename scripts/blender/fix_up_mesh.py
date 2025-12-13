@@ -6,7 +6,7 @@ from mathutils import Vector
 from mathutils.kdtree import KDTree
 
 # Threshold for "near edge" and merge distance
-THRESHOLD = 0.005
+THRESHOLD = 0.025
 
 # Helper function to check if two sets of vertex positions match within threshold
 def verts_match(verts_a, verts_b, threshold):
@@ -478,7 +478,7 @@ def process_objects():
     total_created = 0
     for obj in bpy.context.scene.objects:
         if obj.type == 'MESH':
-            remove_backfaces(obj)
+            #remove_backfaces(obj)
             for i in range(3):
                 created = process_object(obj, i)
                 total_created += created

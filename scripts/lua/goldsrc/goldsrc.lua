@@ -524,6 +524,10 @@ local function on_level_init()
         if level_dict.entities and #level_dict.entities > 0 and level_dict.entities[1]['skyname'] then
             local skybox_name = level_dict.entities[1]['skyname']
             local skybox_geo = level_dict.skyboxes[skybox_name]
+            if not skybox_geo then
+                skybox_name = '_' .. skybox_name
+                skybox_geo = level_dict.skyboxes[skybox_name]
+            end
             if skybox_geo then
                 spawn_non_sync_object(BhvGoldsrcSkybox.id, skybox_geo, 0, 0, 0, nil)
             end

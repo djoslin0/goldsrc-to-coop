@@ -106,6 +106,17 @@ FOR %%f IN ("%OUT_DIR%\textures\*.png") DO (
     endlocal
 )
 
+REM Convert skybox TGAs to PNGs
+IF EXIST "%OUT_DIR%\skyboxes" (
+    FOR %%f IN ("%OUT_DIR%\skyboxes\*.tga") DO (
+        setlocal enabledelayedexpansion
+        set "tga=%%f"
+        set "png=!tga:.tga=.png!"
+        IF NOT EXIST "!png!" "%MAGICK_PATH%" "!tga!" "!png!"
+        endlocal
+    )
+)
+
 REM Run blender goldsrc pipeline
 "%BLENDER_PATH%" --background --python scripts/blender/goldsrc_pipeline.py -- "%OUT_DIR%" "%BSP_NAME%" "%BLEND_EXPORT_PATH%" "%BLEND_SKYBOX_PATH%" "%SCALE%"
 
