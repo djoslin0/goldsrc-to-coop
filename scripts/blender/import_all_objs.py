@@ -60,7 +60,7 @@ def parse_entities(filepath):
     print(f"Parsing entity file: {filepath}")
 
     try:
-        with open(filepath, 'r', encoding='utf-8') as f:
+        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
             text = f.read()
     except Exception as e:
         print(f"❌ Failed to read file: {e}")
@@ -134,4 +134,3 @@ def stage_import_all_objs(num, folder_path, scalar):
     import_level_objs(folder_path)
     import_entities(folder_path + "/entities.txt", scalar)
     bpy.ops.wm.save_mainfile(filepath=os.path.join(folder_path, f"{num}-imported-objs.blend"))
-

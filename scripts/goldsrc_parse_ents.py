@@ -6,7 +6,7 @@ def parse_entities_file(filepath):
     print(f"Parsing entity file: {filepath}")
 
     try:
-        with open(filepath, 'r', encoding='utf-8') as f:
+        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
             text = f.read()
     except Exception as e:
         print(f"❌ Failed to read file: {e}")
