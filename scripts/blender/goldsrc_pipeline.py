@@ -22,7 +22,7 @@ def main():
         argv = []
 
     if len(argv) < 3:
-        print("Usage: blender --background --python goldsrc_pipeline.py -- FOLDER_PATH LEVEL_NAME APPEND_BLEND SCALAR")
+        print("Usage: blender --background --python goldsrc_pipeline.py -- FOLDER_PATH LEVEL_NAME APPEND_BLEND SCALAR OVERRIDE_ENTITIES_PATH")
         sys.exit(1)
 
     folder_path = argv[0]
@@ -36,6 +36,8 @@ def main():
         print("Error: SCALAR must be a float")
         sys.exit(1)
 
+    override_entities_path = argv[5]
+
     if not os.path.isdir(folder_path):
         print(f"Error: folder does not exist: {folder_path}")
         sys.exit(1)
@@ -46,7 +48,7 @@ def main():
     fix_up_mesh.stage_fix_up_mesh(3, folder_path)
     coop_lightmap.stage_coop_lightmap(4, folder_path)
     set_fast64_stuff.stage_set_fast64_stuff(5, folder_path)
-    export_level.stage_export_level(6, folder_path, level_name, export_file_path)
+    export_level.stage_export_level(6, folder_path, level_name, export_file_path, override_entities_path)
 
     convert_mdls.stage_convert_mdls(folder_path)
     convert_sprs.stage_convert_sprs(folder_path, scalar)

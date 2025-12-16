@@ -4,6 +4,7 @@ import sys
 import bmesh
 import mathutils
 import re
+import json
 from mathutils import Vector
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -243,6 +244,30 @@ def triangulate_and_merge_all(threshold=1e-5):
     print(f"Done. Processed {processed} mesh objects.")
     return processed
 
+def perform_overrides(level_name, override_entities_path):
+    json_path = os.path.join(override_entities_path, f"{level_name}.json")
+    if not os.path.exists(json_path):
+        print(f'ZZZ - file not found at {json_path}')
+        return
+
+    with open(json_path, 'r') as f:
+        overrides = json.load(f)
+        print(f'ZZZ - loaded overrides {str(overrides)}')
+
+    if overrides['entities']:
+        for k, overrides in overrides['entities'].items():
+            model_obj = next((obj for obj in bpy.data.objects if f"_ENT_{k}#" in obj.name), None)
+            point_obj = next((obj for obj in bpy.data.objects if obj.name.startswith(f"{k}#")), None)
+            print(f'ZZZ - searching {k} : { "y" if model_obj else "n" }, { "y" if point_obj else "n" }')
+
+            if overrides.get('translate'):
+                translate = mathutils.Vector(overrides['translate'])
+                if model_obj:
+                    model_obj.location += translate
+                    
+                if point_obj and point_obj.location != Vector((0.0, 0.0, 0.0)):
+                    point_obj.location += translate
+
 
 def move_warpentry_to_spawn():
     """Find the info_player_start or info_player_deathmatch with the lowest index and move WarpEntry there."""
@@ -327,7 +352,7 @@ def calculate_aabb_lua():
     return output
 
 
-def stage_export_level(num, folder, level_name, blend_export_path):
+def stage_export_level(num, folder, level_name, blend_export_path, override_entities_path):
     # Append objects from another .blend file
     append_blend_objects(blend_export_path)
 
@@ -345,6 +370,9 @@ def stage_export_level(num, folder, level_name, blend_export_path):
 
     # Triangulate and merge all meshes
     triangulate_and_merge_all()
+
+    # Perform overrides
+    perform_overrides(level_name, override_entities_path)
 
     # Perform reparenting and exporting
     process_blender_objects(actors_folder, level_name)

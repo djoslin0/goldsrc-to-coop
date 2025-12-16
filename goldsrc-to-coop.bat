@@ -118,7 +118,7 @@ IF EXIST "%OUT_DIR%\skyboxes" (
 )
 
 REM Run blender goldsrc pipeline
-"%BLENDER_PATH%" --background --python scripts/blender/goldsrc_pipeline.py -- "%OUT_DIR%" "%BSP_NAME%" "%BLEND_EXPORT_PATH%" "%BLEND_SKYBOX_PATH%" "%SCALE%"
+"%BLENDER_PATH%" --background --python scripts/blender/goldsrc_pipeline.py -- "%OUT_DIR%" "%BSP_NAME%" "%BLEND_EXPORT_PATH%" "%BLEND_SKYBOX_PATH%" "%SCALE%" "%FULLPATH%override-entities"
 
 :skip_conversion
 
