@@ -114,7 +114,7 @@ def set_fast64_material_render_mode_texture(mat, alpha):
     mat.f3d_mat.combiner1.B = '0'
     mat.f3d_mat.combiner1.C = '0'
     mat.f3d_mat.combiner1.D = 'TEXEL0'
-    mat.f3d_mat.combiner1.D_alpha = 'PRIMITIVE'
+    mat.f3d_mat.combiner1.D_alpha = 'TEXEL0' if check_image_has_transparency(mat.f3d_mat.tex0.tex) else 'PRIMITIVE'
     mat.f3d_mat.prim_color = (1.0, 1.0, 1.0, alpha/255)
     update_material_cache(mat)
 

@@ -152,7 +152,16 @@ def apply_material_flags_to_objects():
                 continue
 
             base_name = re.sub(r'(\.\d+)?_f3d$', '', mat.name)
-            mdl_flags = textures.get(base_name, {}).get('flags', 0)
+            # Case-insensitive lookup for texture flags
+            texture_key = None
+            for key in textures.keys():
+                if key.lower() == base_name.lower():
+                    texture_key = key
+                    break
+            if texture_key:
+                mdl_flags = textures[texture_key].get('flags', 0)
+            else:
+                mdl_flags = 0
             mat['mdl_flags'] = mdl_flags
 
             if (mdl_flags & STUDIO_NF_ALPHA) != 0:
