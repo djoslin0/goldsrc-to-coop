@@ -3,6 +3,14 @@ gGoldsrcObjToEnt = {}
 local GoldsrcGfxUtils = require("/goldsrc/goldsrc_gfx_utils")
 
 local function bhv_goldsrc_entity_init(obj)
+    -- force non-sync object
+    if (obj.coopFlags & COOP_OBJ_FLAG_NON_SYNC) == 0 then
+        spawn_non_sync_object(id_bhvGoldsrcEntity, obj_get_model_id_extended(obj), obj.oPosX, obj.oPosY, obj.oPosZ, function(o)
+            o.oBehParams = obj.oBehParams
+        end)
+        obj_mark_for_deletion(obj)
+        return
+    end
     obj.oFlags = OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE
     obj.header.gfx.skipInViewCheck = true
     obj.oOpacity = 255

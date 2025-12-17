@@ -495,7 +495,7 @@ local function update()
         sReplaceTextures = sReplaceTextures - 1
         if sReplaceTextures == 0 then
             local level_dict = gGoldsrc.levels[sCachedLevelNum]
-            if level_dict ~= nil then
+            if level_dict ~= nil and gMarioStates[0].area and gMarioStates[0].area.root and gMarioStates[0].area.root.node then
                 GoldsrcGfxUtils.replace_gfx_textures(gMarioStates[0].area.root.node)
             end
         end

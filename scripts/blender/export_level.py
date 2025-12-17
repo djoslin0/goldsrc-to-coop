@@ -247,27 +247,29 @@ def triangulate_and_merge_all(threshold=1e-5):
 def perform_overrides(level_name, override_entities_path):
     json_path = os.path.join(override_entities_path, f"{level_name}.json")
     if not os.path.exists(json_path):
-        print(f'ZZZ - file not found at {json_path}')
         return
 
     with open(json_path, 'r') as f:
         overrides = json.load(f)
-        print(f'ZZZ - loaded overrides {str(overrides)}')
 
     if overrides['entities']:
         for k, overrides in overrides['entities'].items():
             model_obj = next((obj for obj in bpy.data.objects if f"_ENT_{k}#" in obj.name), None)
             point_obj = next((obj for obj in bpy.data.objects if obj.name.startswith(f"{k}#")), None)
-            print(f'ZZZ - searching {k} : { "y" if model_obj else "n" }, { "y" if point_obj else "n" }')
 
             if overrides.get('translate'):
                 translate = mathutils.Vector(overrides['translate'])
                 if model_obj:
                     model_obj.location += translate
-                    
+
                 if point_obj and point_obj.location != Vector((0.0, 0.0, 0.0)):
                     point_obj.location += translate
 
+            if overrides.get('delete'):
+                if model_obj:
+                    bpy.data.objects.remove(model_obj)
+                if point_obj:
+                    bpy.data.objects.remove(point_obj)
 
 def move_warpentry_to_spawn():
     """Find the info_player_start or info_player_deathmatch with the lowest index and move WarpEntry there."""

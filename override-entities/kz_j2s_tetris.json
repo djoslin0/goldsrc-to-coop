@@ -1,0 +1,19 @@
+{
+    "entities": {
+        "20": { "delete": 1 },
+        "29": { "delete": 1 },
+        "34": { "delete": 1 },
+        "39": { "delete": 1 },
+        "40": { "delete": 1 },
+        "49": { "delete": 1 },
+        "54": { "delete": 1 },
+        "55": { "delete": 1 },
+        "338": { "delete": 1 },
+        "339": { "delete": 1 },
+        "341": { "delete": 1 },
+        "343": { "delete": 1 },
+        "345": { "delete": 1 },
+        "347": { "delete": 1 },
+        "349": { "delete": 1 }
+    }
+}
